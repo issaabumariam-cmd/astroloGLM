@@ -5,7 +5,7 @@ import { zodiacSigns, elementColors } from "@/lib/astrology/signs";
 import { calculateCompatibility, type CompatibilityResult } from "@/lib/astrology/compatibility";
 import { Eyebrow, Card, ScoreBar, OrnateDivider } from "@/components/shared/ui-primitives";
 import { ShareButton } from "@/components/shared/share-button";
-import { Sparkles, Heart, Users, Repeat } from "lucide-react";
+import { Sparkles, Heart, Users, Repeat, Loader2, BookOpen, Lock } from "lucide-react";
 
 export default function CompatibilityPage() {
   const [sign1, setSign1] = useState<string>("aries");
@@ -13,6 +13,9 @@ export default function CompatibilityPage() {
   const [result, setResult] = useState<CompatibilityResult | null>(
     calculateCompatibility("aries", "libra")
   );
+  const [aiReading, setAiReading] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSources, setAiSources] = useState<{ chapter_num: number; chapter_title: string; text: string; score?: number }[]>([]);
 
   const handleCheck = (s1: string, s2: string) => {
     setSign1(s1);
@@ -21,6 +24,26 @@ export default function CompatibilityPage() {
   };
 
   const swap = () => handleCheck(sign2, sign1);
+
+  const fetchAIReading = async () => {
+    setAiLoading(true);
+    setAiReading(null);
+    try {
+      const response = await fetch("/api/compatibility-reading", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sign1, sign2 }),
+      });
+      if (!response.ok) throw new Error("Failed");
+      const data = await response.json();
+      setAiReading(data.reading);
+      setAiSources(data.sources || []);
+    } catch {
+      setAiReading("Could not generate reading. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
@@ -147,6 +170,51 @@ export default function CompatibilityPage() {
               />
             </div>
           </div>
+
+          {/* AI Deep Reading */}
+          <Card className="mt-6 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">AI Deep Reading</h3>
+              </div>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Premium</span>
+            </div>
+            <p className="mt-2 text-xs text-foreground-subtle">
+              Echo reads the synastry chapter and interprets your connection through classical wisdom.
+            </p>
+            {aiReading ? (
+              <div className="mt-4">
+                <p className="text-sm leading-relaxed text-foreground-muted whitespace-pre-wrap">{aiReading}</p>
+                {aiSources.length > 0 && (
+                  <div className="mt-4 border-t border-border pt-3">
+                    <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                      <BookOpen className="h-3 w-3" /> Sourced from the book ({aiSources.length} passages)
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {aiSources.map((s, i) => (
+                        <p key={i} className="text-[10px] text-foreground-subtle">
+                          Ch.{s.chapter_num}: {s.chapter_title} · {Math.round((s.score || 0) * 100)}% match
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button onClick={fetchAIReading} className="btn-ghost mt-3 text-xs">
+                  <Repeat className="h-3 w-3" /> Regenerate
+                </button>
+              </div>
+            ) : aiLoading ? (
+              <div className="mt-4 flex items-center gap-2 text-sm text-foreground-muted">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Echo is reading your synastry...
+              </div>
+            ) : (
+              <button onClick={fetchAIReading} className="btn-primary mt-4 text-sm">
+                <Sparkles className="h-3.5 w-3.5" /> Generate Deep Reading
+              </button>
+            )}
+          </Card>
         </>
       )}
     </div>
