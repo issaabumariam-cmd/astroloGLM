@@ -43,6 +43,16 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Astrolo" }],
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.svg", type: "image/svg+xml", sizes: "192x192" },
+      { url: "/icon-512.svg", type: "image/svg+xml", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/apple-icon.svg", type: "image/svg+xml", sizes: "180x180" },
+    ],
+  },
   openGraph: {
     title: "Astrolo — Cosmic Self-Knowledge",
     description:
