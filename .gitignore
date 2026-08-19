@@ -15,8 +15,8 @@ dev_output.log
 embed_output*.log
 clean_output.log
 
-# Data (regenerated from scripts — don't commit 21MB embedded file)
-data/book_chunks_embedded.json
+# Data — keep book content + chunks for clone-readiness
+# Only exclude cache and build artifacts
 data/horoscope_cache/
 
 # OS
