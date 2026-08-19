@@ -4,6 +4,8 @@ import { ArrowLeft, Check, AlertCircle, Heart, Briefcase, Star } from "lucide-re
 import { zodiacSigns, getSignById, elementColors, elementDescriptions } from "@/lib/astrology/signs";
 import { planets } from "@/lib/astrology/planets";
 import { Eyebrow, Card, OrnateDivider, Tag } from "@/components/shared/ui-primitives";
+import { retrieveRelevantChunks } from "@/lib/ollama/rag";
+import { BookOpen } from "lucide-react";
 
 export function generateStaticParams() {
   return zodiacSigns.map((sign) => ({ sign: sign.id }));
@@ -176,6 +178,39 @@ export default async function SignProfilePage({ params }: PageProps<"/signs/[sig
           </div>
         </Card>
       </div>
+
+      {/* From the Book */}
+      {await (async () => {
+        const bookChunks = await retrieveRelevantChunks(
+          `${sign.name} ascendant personality character traits physical type ${sign.rulingPlanet} ${sign.element}`,
+          4
+        );
+        if (bookChunks.length === 0) return null;
+        return (
+          <div className="mt-8">
+            <Eyebrow><BookOpen className="inline h-3 w-3 mr-1" />From the Book</Eyebrow>
+            <p className="mt-2 text-xs text-foreground-subtle">
+              Passages from &ldquo;Astrology: Its Technics and Ethics&rdquo; by C.A.Q. Libra (1917),
+              retrieved via semantic search.
+            </p>
+            <div className="mt-4 space-y-3">
+              {bookChunks.map((chunk, i) => (
+                <Card key={i} className="p-4">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-primary">Ch.{chunk.chapter_num}: {chunk.chapter_title}</span>
+                    {chunk.score !== undefined && (
+                      <span className="text-foreground-subtle">{Math.round(chunk.score * 100)}% match</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-foreground-muted line-clamp-4">
+                    &ldquo;{chunk.text}&rdquo;
+                  </p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* CTA */}
       <div className="mt-10 text-center">

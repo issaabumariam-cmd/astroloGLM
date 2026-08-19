@@ -28,22 +28,22 @@ export default function HomePage() {
             </div>
             <Eyebrow>Cosmic Self-Knowledge</Eyebrow>
             <h1 className="heading-serif mt-4 text-4xl font-semibold text-foreground sm:text-5xl lg:text-6xl text-balance">
-              The stars wrote your story.
+              Meet Echo.
               <br />
-              <span className="text-primary italic">Let&apos;s read it together.</span>
+              <span className="text-primary italic">Your astrological guide.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground-muted text-balance">
-              Premium astrology powered by the Swiss Ephemeris and an AI advisor
-              trained on classical texts. Real natal charts, daily horoscopes, and
-              deep guidance — for the modern seeker.
+              Enter your birth date. Echo reads your chart and starts a conversation —
+              about your strengths, your challenges, and what makes you uniquely you.
+              Powered by real astronomy and classical astrology texts.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-              <Link href="/birth-chart" className="btn-primary">
+              <Link href="/echo" className="btn-primary">
                 <Sparkles className="h-4 w-4" />
-                Calculate Your Birth Chart
+                Meet Echo — Free, No Signup
               </Link>
-              <Link href="/horoscope" className="btn-secondary">
-                Read Today&apos;s Horoscope
+              <Link href="/birth-chart" className="btn-secondary">
+                Calculate Your Birth Chart
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

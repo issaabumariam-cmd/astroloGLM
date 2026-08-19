@@ -1,4 +1,6 @@
-import { Eyebrow, Card } from "@/components/shared/ui-primitives";
+import fs from "fs";
+import path from "path";
+import { Eyebrow, Card, Tag } from "@/components/shared/ui-primitives";
 import { BookOpen, Lock } from "lucide-react";
 import Link from "next/link";
 
@@ -7,31 +9,42 @@ export const metadata = {
   description: "A digitised classic astrology text — searchable, structured, and accessible. The wisdom of C.A.Q. Libra's 1917 masterwork.",
 };
 
-// Placeholder chapters — will be populated from book ingestion
-const chapters = [
-  { num: 1, title: "Introduction", preview: "The foundations of astrology, its scientific basis, and its proper use...", locked: false },
-  { num: 2, title: "The Cosmos", preview: "The solar system, the central sun, and the movements that govern our lives...", locked: false },
-  { num: 3, title: "Fate and Free Will", preview: "The relationship between cosmic influence and personal choice...", locked: true },
-  { num: 4, title: "The Aspects", preview: "The phases of the planets and how their angles shape our experience...", locked: true },
-  { num: 5, title: "Strong and Weak Natures", preview: "How character is shown in the chart and how fear strengthens negative aspects...", locked: true },
-  { num: 6, title: "The Houses", preview: "The twelve departments of life and their rulership...", locked: true },
-  { num: 7, title: "The Planets", preview: "The influences of the celestial bodies on human life...", locked: true },
-  { num: 8, title: "The Signs", preview: "The twelve zodiac signs and their characteristics...", locked: true },
-  { num: 9, title: "The Use of Astrology", preview: "Practical application of astrological knowledge in daily life...", locked: true },
-  { num: 10, title: "The Laws of Karma", preview: "Reincarnation, causation, and the deeper philosophical basis...", locked: true },
-];
+// Chapters that are free to read (the rest are premium)
+const FREE_CHAPTERS = [1, 2];
+
+type Chapter = {
+  chapter_num: number;
+  title: string;
+  content: string;
+  chunk_count: number;
+};
+
+function getChapters(): Chapter[] {
+  try {
+    const filePath = path.join(process.cwd(), "data", "book_chapters.json");
+    if (!fs.existsSync(filePath)) return [];
+    const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function BookPage() {
+  const chapters = getChapters();
+  const totalChunks = chapters.reduce((s, c) => s + (c.chunk_count || 0), 0);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
       <div className="mb-10 text-center">
-        <Eyebrow>Classical Wisdom</Eyebrow>
+        <Eyebrow>Classical Wisdom · 14 Chapters · {totalChunks} Passages</Eyebrow>
         <h1 className="heading-serif mt-2 text-4xl font-semibold text-foreground sm:text-5xl">
           The Library
         </h1>
         <p className="mt-3 text-sm text-foreground-muted">
           &ldquo;Astrology: Its Technics and Ethics&rdquo; by C.A.Q. Libra (1917) — a foundational
-          text of modern astrology, digitised and structured for the modern reader.
+          text bridging classical and modern astrology, covering aspects, houses, planets, signs,
+          synastry, karma, and the ethical practice of astrological guidance.
         </p>
       </div>
 
@@ -44,43 +57,65 @@ export default function BookPage() {
             <h2 className="font-serif text-xl font-semibold text-foreground">
               Astrology: Its Technics and Ethics
             </h2>
-            <p className="text-sm text-foreground-muted">C.A.Q. Libra · 1917 · 282 pages</p>
+            <p className="text-sm text-foreground-muted">C.A.Q. Libra · 1917 · 282 pages · 14 chapters</p>
             <p className="mt-2 text-sm leading-relaxed text-foreground-muted">
-              A foundational text that bridges classical and modern astrology, covering
-              aspects, houses, planets, karma, and the ethical practice of astrological guidance.
+              A foundational text that covers the calculation of horoscopes, the meaning of planetary
+              aspects, the twelve houses, the signs of the zodiac, the nature of the planets,
+              compatibility and synastry, karma and reincarnation, and the ethical use of astrological
+              knowledge. This is the same book that powers our AI advisor&apos;s knowledge base.
             </p>
           </div>
         </div>
       </Card>
 
-      <div className="space-y-3">
-        {chapters.map((ch) => (
-          <Card key={ch.num} hover className="p-5">
-            <Link href={`/book/${ch.num}`} className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-primary">Ch. {ch.num}</span>
-                  {ch.locked && <Lock className="h-3 w-3 text-foreground-subtle" />}
-                </div>
-                <h3 className="mt-1 font-serif text-lg font-semibold text-foreground">
-                  {ch.title}
-                </h3>
-                <p className="mt-1 text-sm text-foreground-muted line-clamp-1">{ch.preview}</p>
-              </div>
-            </Link>
-          </Card>
-        ))}
-      </div>
+      {chapters.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm text-foreground-muted">
+            Book data not found. Run <code className="rounded bg-surface-muted px-2 py-0.5 text-xs">npx tsx scripts/ingest-book-v3.ts</code> to generate it.
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {chapters.map((ch) => {
+            const isFree = FREE_CHAPTERS.includes(ch.chapter_num);
+            return (
+              <Card key={ch.chapter_num} hover className="p-5">
+                <Link href={`/book/${ch.chapter_num}`} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-primary">
+                        Ch. {ch.chapter_num}
+                      </span>
+                      {isFree ? (
+                        <Tag className="text-[10px] bg-success/10 text-success">Free</Tag>
+                      ) : (
+                        <Lock className="h-3 w-3 text-foreground-subtle" />
+                      )}
+                    </div>
+                    <h3 className="mt-1 font-serif text-lg font-semibold text-foreground">
+                      {ch.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground-muted line-clamp-2">
+                      {ch.content?.substring(0, 150).replace(/\s+/g, " ") || "No preview available"}...
+                    </p>
+                    <p className="mt-2 text-xs text-foreground-subtle">
+                      {ch.chunk_count || 0} passages · {Math.round((ch.content?.length || 0) / 1000)}K characters
+                    </p>
+                  </div>
+                </Link>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <Card className="mt-8 bg-surface-muted/30 p-6 text-center">
         <Eyebrow>Unlock the Full Library</Eyebrow>
         <p className="mt-2 text-sm text-foreground-muted">
-          Premium members get access to all chapters, searchable text, and AI-assisted
-          exploration of this classic work.
+          Premium members get access to all 14 chapters, searchable text, and AI-assisted
+          exploration of this classic work — the same knowledge base that powers Echo.
         </p>
-        <Link href="/pricing" className="btn-secondary mt-4">
-          Explore Premium
-        </Link>
+        <Link href="/pricing" className="btn-secondary mt-4">Explore Premium</Link>
       </Card>
     </div>
   );
