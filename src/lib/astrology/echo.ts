@@ -1,4 +1,4 @@
-// Echo hook question generator — analyzes natal chart and generates
+// Jehana hook question generator — analyzes natal chart and generates
 // personalized life-coaching questions grounded in the book's knowledge
 
 import type { ChartData, PlanetPosition } from "./chart";
@@ -12,17 +12,17 @@ export type HookQuestion = {
   question: string;
   chartBasis: string; // what chart placements informed this question
   bookContext: string; // relevant book passages
-  responseHint: string; // what Echo will reveal when answered
+  responseHint: string; // what Jehana will reveal when answered
 };
 
-export type EchoIntro = {
+export type JehanaIntro = {
   greeting: string;
   personalitySummary: string;
   hookQuestions: HookQuestion[];
   followUp: string;
 };
 
-const ECHO_SYSTEM_PROMPT = `You are Echo, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
+const Jehana_SYSTEM_PROMPT = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
 
 Your personality:
 - Warm, insightful, concise — never robotic
@@ -47,10 +47,10 @@ When given a natal chart, you:
 4. Generate 3 personalized hook questions based on specific chart placements
 5. Each question connects an astrological pattern to a real-life situation`;
 
-export async function generateEchoIntro(
+export async function generateJehanaIntro(
   chart: ChartData,
   birthDateOnly = false
-): Promise<EchoIntro | null> {
+): Promise<JehanaIntro | null> {
   try {
     // Build chart summary for the prompt
     const sun = chart.sun;
@@ -85,9 +85,9 @@ ${chart.aspects.filter((a) => a.type === "trine").slice(0, 3).map((a) => `- ${a.
       ? bookChunks.map((c, i) => `[Excerpt ${i + 1}: ${c.text.substring(0, 300)}]`).join("\n")
       : "";
 
-    const prompt = `${ECHO_SYSTEM_PROMPT}
+    const prompt = `${Jehana_SYSTEM_PROMPT}
 
-Based on this natal chart, generate Echo's opening message and 3 personalized hook questions.
+Based on this natal chart, generate Jehana's opening message and 3 personalized hook questions.
 
 ${chartSummary}
 
@@ -102,26 +102,26 @@ Generate a JSON response with this exact structure:
       "id": "conflict",
       "question": "A question about how they handle conflict or challenges — personalized to their Mars/Saturn/aspects. Make it feel like a life coach asking, not an astrologer.",
       "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Echo will reveal when they answer"
+      "responseHint": "What Jehana will reveal when they answer"
     },
     {
       "id": "energy",
       "question": "A question about what drains or energizes them — personalized to their Moon/Sun/12th house. Life coach framing.",
       "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Echo will reveal when they answer"
+      "responseHint": "What Jehana will reveal when they answer"
     },
     {
       "id": "strengths",
       "question": "A question about their hidden strengths or natural gifts — personalized to their trines/Jupiter/Venus. Uplifting framing.",
       "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Echo will reveal when they answer"
+      "responseHint": "What Jehana will reveal when they answer"
     }
   ],
   "followUp": "A closing line that invites them to choose a question. 1 sentence. Warm, not pushy."
 }
 
 Important:
-- The greeting should feel like Echo already knows them
+- The greeting should feel like Jehana already knows them
 - The personality summary should reveal something they might not know about themselves
 - The hook questions should feel personal, not like a quiz — they should make the person think "how did you know that?"
 - Reference the book's wisdom naturally, not academically
@@ -147,7 +147,7 @@ Important:
     if (!content) return null;
 
     // Parse JSON response
-    let parsed: EchoIntro;
+    let parsed: JehanaIntro;
     try {
       parsed = JSON.parse(content);
     } catch {
@@ -159,7 +159,7 @@ Important:
 
     return parsed;
   } catch (error) {
-    console.error("Echo intro generation error:", error);
+    console.error("Jehana intro generation error:", error);
     return null;
   }
 }
@@ -185,7 +185,7 @@ Ascendant: ${chart.rising.signName} ${Math.floor(chart.rising.degreesInSign)}°
 Key aspects: ${chart.aspects.map((a) => `${a.planet1} ${a.type} ${a.planet2}`).join(", ")}
 `;
 
-    const prompt = `You are Echo, an astrological life coach. The user answered one of your hook questions.
+    const prompt = `You are Jehana, an astrological life coach. The user answered one of your hook questions.
 
 Their chart:
 ${chartSummary}
@@ -197,7 +197,7 @@ This was based on: ${hookQuestion.chartBasis}
 
 The user answered: "${userAnswer}"
 
-Respond as Echo:
+Respond as Jehana:
 1. Acknowledge their answer with warmth (1 sentence)
 2. Connect their answer to their specific chart placements (2-3 sentences) — reference actual planets/signs/aspects
 3. Offer a wellbeing/life-coach insight grounded in the book's wisdom (2-3 sentences)

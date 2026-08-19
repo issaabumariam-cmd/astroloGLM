@@ -28,19 +28,19 @@ export default function HomePage() {
             </div>
             <Eyebrow>Cosmic Self-Knowledge</Eyebrow>
             <h1 className="heading-serif mt-4 text-4xl font-semibold text-foreground sm:text-5xl lg:text-6xl text-balance">
-              Meet Echo.
+              Meet Jehana.
               <br />
               <span className="text-primary italic">Your astrological guide.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground-muted text-balance">
-              Enter your birth date. Echo reads your chart and starts a conversation —
+              Enter your birth date. Jehana reads your chart and starts a conversation —
               about your strengths, your challenges, and what makes you uniquely you.
               Powered by real astronomy and classical astrology texts.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
               <Link href="/echo" className="btn-primary">
                 <Sparkles className="h-4 w-4" />
-                Meet Echo — Free, No Signup
+                Meet Jehana — Free, No Signup
               </Link>
               <Link href="/birth-chart" className="btn-secondary">
                 Calculate Your Birth Chart

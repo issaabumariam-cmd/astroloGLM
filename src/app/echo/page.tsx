@@ -35,7 +35,7 @@ type HookQuestion = {
   responseHint: string;
 };
 
-type EchoIntro = {
+type JehanaIntro = {
   greeting: string;
   personalitySummary: string;
   hookQuestions: HookQuestion[];
@@ -44,13 +44,13 @@ type EchoIntro = {
 
 type Stage = "input" | "loading" | "intro" | "hook-answer" | "hook-response" | "upgrade" | "advisor";
 
-export default function EchoPage() {
+export default function JehanaPage() {
   const [stage, setStage] = useState<Stage>("input");
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [cityKey, setCityKey] = useState("london");
   const [chart, setChart] = useState<ChartPreview | null>(null);
-  const [intro, setIntro] = useState<EchoIntro | null>(null);
+  const [intro, setIntro] = useState<JehanaIntro | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hookResponse, setHookResponse] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function EchoPage() {
       setIntro(data.intro);
       setStage("intro");
     } catch {
-      setError("Echo couldn't connect. Please try again.");
+      setError("Jehana couldn't connect. Please try again.");
       setStage("input");
     } finally {
       setLoading(false);
@@ -125,7 +125,7 @@ export default function EchoPage() {
       setExchangesCount((c) => c + 1);
       setStage("hook-response");
     } catch {
-      setError("Echo couldn't respond. Please try again.");
+      setError("Jehana couldn't respond. Please try again.");
     } finally {
       setHookLoading(false);
     }
@@ -149,14 +149,14 @@ export default function EchoPage() {
         <div className="fade-in">
           <div className="mb-8 text-center">
             <ZodiacWheel size={88} className="mx-auto text-primary spin-slow" />
-            <Eyebrow className="mt-4">Meet Echo — Your Astrological Guide</Eyebrow>
+            <Eyebrow className="mt-4">Meet Jehana — Your Astrological Guide</Eyebrow>
             <h1 className="heading-serif mt-3 text-3xl font-semibold text-foreground sm:text-4xl text-balance">
               Enter your birth date.
               <br />
-              <span className="text-primary italic">Echo will introduce you to yourself.</span>
+              <span className="text-primary italic">Jehana will introduce you to yourself.</span>
             </h1>
             <p className="mt-4 text-sm text-foreground-muted">
-              No signup needed. Echo reads your chart and starts a conversation —
+              No signup needed. Jehana reads your chart and starts a conversation —
               about your strengths, your challenges, and what makes you uniquely you.
             </p>
           </div>
@@ -205,7 +205,7 @@ export default function EchoPage() {
               {error && <p className="text-sm text-error">{error}</p>}
               <button onClick={handleStart} disabled={!birthDate || loading} className="btn-primary w-full disabled:opacity-50">
                 <Sparkles className="h-4 w-4" />
-                Meet Echo
+                Meet Jehana
               </button>
             </div>
           </Card>
@@ -220,7 +220,7 @@ export default function EchoPage() {
         <div className="flex flex-col items-center justify-center py-20">
           <ZodiacWheel size={64} className="text-primary spin-slow mb-6" />
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <p className="mt-4 text-sm text-foreground-muted">Echo is reading your chart...</p>
+          <p className="mt-4 text-sm text-foreground-muted">Jehana is reading your chart...</p>
         </div>
       )}
 
@@ -258,7 +258,7 @@ export default function EchoPage() {
             )}
           </Card>
 
-          {/* Echo's message */}
+          {/* Jehana's message */}
           <div className="mb-6">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -323,7 +323,7 @@ export default function EchoPage() {
               disabled={!userAnswer.trim() || hookLoading}
               className="btn-primary mt-3 w-full disabled:opacity-50"
             >
-              {hookLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Echo is reflecting...</> : <><Sparkles className="h-4 w-4" /> Share with Echo</>}
+              {hookLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Jehana is reflecting...</> : <><Sparkles className="h-4 w-4" /> Share with Jehana</>}
             </button>
           </div>
         </div>
@@ -355,11 +355,11 @@ export default function EchoPage() {
               There&apos;s so much more
             </h2>
             <p className="mt-3 text-sm text-foreground-muted">
-              Echo has barely scratched the surface of your chart. With Premium, you unlock:
+              Jehana has barely scratched the surface of your chart. With Premium, you unlock:
             </p>
             <ul className="mx-auto mt-4 max-w-xs space-y-2 text-left">
               {[
-                "Unlimited conversations with Echo",
+                "Unlimited conversations with Jehana",
                 "AI horoscopes (daily, weekly, monthly, yearly)",
                 "Full birth chart interpretation from the book",
                 "AI compatibility readings",

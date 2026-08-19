@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateNatalChart } from "@/lib/astrology/placidus";
 import { getTimezoneForCoords, localToUTC } from "@/lib/astrology/timezone";
-import { generateEchoIntro, generateHookResponse, type HookQuestion } from "@/lib/astrology/echo";
+import { generateJehanaIntro, generateHookResponse, type HookQuestion } from "@/lib/astrology/echo";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Could not calculate chart" }, { status: 500 });
       }
 
-      const intro = await generateEchoIntro(chart, birthDateOnly);
+      const intro = await generateJehanaIntro(chart, birthDateOnly);
 
       if (!intro) {
-        return NextResponse.json({ error: "Echo could not generate an introduction" }, { status: 500 });
+        return NextResponse.json({ error: "Jehana could not generate an introduction" }, { status: 500 });
       }
 
       return NextResponse.json({
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       const response = await generateHookResponse(chart, hookQ, userAnswer);
 
       if (!response) {
-        return NextResponse.json({ error: "Echo could not respond" }, { status: 500 });
+        return NextResponse.json({ error: "Jehana could not respond" }, { status: 500 });
       }
 
       return NextResponse.json({ response });
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    console.error("Echo API error:", error);
+    console.error("Jehana API error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }

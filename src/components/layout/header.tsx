@@ -7,7 +7,7 @@ import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "/echo", label: "Echo", highlight: true },
+  { href: "/echo", label: "Jehana", highlight: true },
   { href: "/horoscope", label: "Horoscope" },
   { href: "/personal", label: "AI Horoscope" },
   { href: "/signs", label: "Signs" },
