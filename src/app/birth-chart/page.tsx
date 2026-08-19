@@ -5,7 +5,7 @@ import { getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card, OrnateDivider } from "@/components/shared/ui-primitives";
 import { ChartWheel } from "@/components/chart/chart-wheel";
 import type { ChartData } from "@/lib/astrology/chart";
-import { Sparkles, Calendar, Clock, MapPin, Loader2 } from "lucide-react";
+import { Sparkles, Calendar, Clock, MapPin, Loader2, BookOpen, Repeat } from "lucide-react";
 
 const COMMON_CITIES: Record<string, { name: string; lat: number; lng: number }> = {
   london: { name: "London, UK", lat: 51.5074, lng: -0.1278 },
@@ -33,6 +33,38 @@ export default function BirthChartPage() {
   const [loading, setLoading] = useState(false);
   const [chart, setChart] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiInterpretation, setAiInterpretation] = useState<string | null>(null);
+  const [aiSources, setAiSources] = useState<{ chapter_num: number; chapter_title: string; text: string; score?: number }[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const fetchAIInterpretation = async () => {
+    if (!chart) return;
+    setAiLoading(true);
+    setAiInterpretation(null);
+    try {
+      const city = COMMON_CITIES[cityKey] || COMMON_CITIES.london;
+      const response = await fetch("/api/birth-chart-interpretation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sunSign: chart.sun.signId,
+          moonSign: chart.moon.signId,
+          risingSign: chart.rising.signId,
+          sunDegrees: chart.sun.degreesInSign,
+          moonDegrees: chart.moon.degreesInSign,
+          risingDegrees: chart.rising.degreesInSign,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed");
+      const data = await response.json();
+      setAiInterpretation(data.reading);
+      setAiSources(data.sources || []);
+    } catch {
+      setAiInterpretation("Could not generate interpretation. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,6 +339,48 @@ export default function BirthChartPage() {
                 </p>
               </div>
             </div>
+          </Card>
+
+          {/* AI Interpretation */}
+          <Card className="p-6 mt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Eyebrow>AI Interpretation from the Book</Eyebrow>
+              </div>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Premium</span>
+            </div>
+            {aiInterpretation ? (
+              <div>
+                <p className="mt-3 text-sm leading-relaxed text-foreground-muted whitespace-pre-wrap">{aiInterpretation}</p>
+                {aiSources.length > 0 && (
+                  <div className="mt-4 border-t border-border pt-3">
+                    <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                      <BookOpen className="h-3 w-3" /> Sourced from the book ({aiSources.length} passages)
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {aiSources.map((s, i) => (
+                        <p key={i} className="text-[10px] text-foreground-subtle">
+                          Ch.{s.chapter_num}: {s.chapter_title} · {Math.round((s.score || 0) * 100)}% match
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button onClick={fetchAIInterpretation} className="btn-ghost mt-3 text-xs">
+                  <Repeat className="h-3 w-3" /> Regenerate
+                </button>
+              </div>
+            ) : aiLoading ? (
+              <div className="mt-3 flex items-center gap-2 text-sm text-foreground-muted">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Echo is reading your chart through the book...
+              </div>
+            ) : (
+              <button onClick={fetchAIInterpretation} className="btn-primary mt-3 text-sm">
+                <Sparkles className="h-3.5 w-3.5" /> Interpret My Chart
+              </button>
+            )}
           </Card>
 
           {/* Recalculate */}

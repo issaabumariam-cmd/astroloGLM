@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from "next/server";
+import { retrieveRelevantChunks } from "@/lib/ollama/rag";
+import { getSignById } from "@/lib/astrology/signs";
+
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
+
+export async function POST(request: NextRequest) {
+  try {
+    const { sunSign, moonSign, risingSign, sunDegrees, moonDegrees, risingDegrees } = await request.json();
+
+    if (!sunSign || !moonSign || !risingSign) {
+      return NextResponse.json({ error: "All three signs required" }, { status: 400 });
+    }
+
+    const sun = getSignById(sunSign);
+    const moon = getSignById(moonSign);
+    const rising = getSignById(risingSign);
+
+    if (!sun || !moon || !rising) {
+      return NextResponse.json({ error: "Invalid signs" }, { status: 400 });
+    }
+
+    // RAG: retrieve passages about these specific placements
+    const ragQuery = `${sun.name} ascendant personality character ${moon.name} Moon emotional nature ${rising.name} rising first impression physical type`;
+    const chunks = await retrieveRelevantChunks(ragQuery, 5);
+
+    const bookContext = chunks.length > 0
+      ? chunks.map((c) => `[Ch.${c.chapter_num}: ${c.chapter_title}]\n${c.text}`).join("\n\n---\n\n")
+      : "";
+
+    const prompt = `You are Echo, an astrological life coach interpreting a natal chart.
+
+Chart details:
+- Sun in ${sun.name} ${Math.floor(sunDegrees || 0)}° (${sun.element}, ${sun.modality}, ruled by ${sun.rulingPlanet})
+- Moon in ${moon.name} ${Math.floor(moonDegrees || 0)}° (${moon.element}, ${moon.modality})
+- Ascendant (Rising) in ${rising.name} ${Math.floor(risingDegrees || 0)}° (${rising.element}, ${rising.modality})
+
+${bookContext ? `Relevant excerpts from C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917):\n${bookContext}` : ""}
+
+Write a 300-400 word natal chart interpretation that:
+1. Opens with a vivid image of this person's cosmic signature — the unique blend of their Big Three
+2. Explains what their Sun placement means for their life purpose and identity
+3. Explains what their Moon placement means for their emotional world and inner needs
+4. Explains what their Rising sign means for how others see them and their approach to life
+5. Identifies the dynamic between the three — where they flow, where they tension
+6. Offers a specific life-coaching insight or growth area
+7. Ends with a reflection question
+
+Tone: wise, warm, specific. Not generic "you are a Leo." Reference the specific degree, the book's wisdom about this sign's physical type or character traits. Frame as self-knowledge, not fortune-telling.`;
+
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        stream: false,
+        messages: [{ role: "user", content: prompt }],
+        options: { temperature: 0.75, top_p: 0.9, seed: 42 },
+      }),
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
+    }
+
+    const data = await response.json();
+    const reading = data.message?.content?.trim();
+
+    if (!reading) {
+      return NextResponse.json({ error: "Could not generate interpretation" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      reading,
+      sources: chunks.map((c) => ({
+        chapter_num: c.chapter_num,
+        chapter_title: c.chapter_title,
+        text: c.text.substring(0, 200),
+        score: c.score,
+      })),
+    });
+  } catch (error) {
+    console.error("Birth chart interpretation error:", error);
+    return NextResponse.json({ error: "Could not generate interpretation" }, { status: 500 });
+  }
+}
