@@ -26,21 +26,21 @@ export default function HomePage() {
             <div className="mb-6 flex items-center justify-center">
               <ZodiacWheel size={88} className="text-primary spin-slow" />
             </div>
-            <Eyebrow>Cosmic Self-Knowledge</Eyebrow>
+            <Eyebrow>The Cosmos, Echoed Back</Eyebrow>
             <h1 className="heading-serif mt-4 text-4xl font-semibold text-foreground sm:text-5xl lg:text-6xl text-balance">
               Meet Jehana.
               <br />
-              <span className="text-primary italic">Your astrological guide.</span>
+              <span className="text-primary italic">The universe, introducing you to yourself.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground-muted text-balance">
-              Enter your birth date. Jehana reads your chart and starts a conversation —
-              about your strengths, your challenges, and what makes you uniquely you.
-              Powered by real astronomy and classical astrology texts.
+              The universe has already written your story — every planet, every angle,
+              every house placed the moment you arrived. Jehana reads that moment and
+              echoes it back. Not predictions. Reflections of who you already are.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-              <Link href="/echo" className="btn-primary">
+              <Link href="/advisor" className="btn-primary">
                 <Sparkles className="h-4 w-4" />
-                Meet Jehana — Free, No Signup
+                Meet Jehana — Free
               </Link>
               <Link href="/birth-chart" className="btn-secondary">
                 Calculate Your Birth Chart
@@ -48,16 +48,16 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-6 text-xs text-foreground-subtle">
-              Free forever. Your birth data is sacred — we never sell it.
+              Free forever. Your birth data is sacred — the cosmos gave it, we protect it.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Today's Horoscope */}
+      {/* Today's Cosmic Echo */}
       <section className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="mb-8 text-center">
-          <Eyebrow>Today&apos;s Reading</Eyebrow>
+          <Eyebrow>Today&apos;s Cosmic Echo</Eyebrow>
           <h2 className="heading-serif mt-2 text-3xl font-semibold text-foreground sm:text-4xl">
             {horoscope.sign.name} — {today.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}
           </h2>
@@ -134,16 +134,16 @@ export default function HomePage() {
             {
               icon: Star,
               title: "Real Birth Charts",
-              desc: "Swiss Ephemeris calculation — the same engine used by Astro.com. Not just sun signs; full planetary positions, houses, and aspects.",
+              desc: "The same astronomical engine that powers Astro.com. Every planet, every angle — a reflection of the cosmic energy you carry.",
               href: "/birth-chart",
               cta: "See your chart",
             },
             {
               icon: Sparkles,
               title: "AI Astrology Advisor",
-              desc: "Ask anything. Our AI advisor is trained on classical astrology texts and your personal chart. Multi-turn conversations, real guidance.",
+              desc: "Ask anything. Jehana is trained on classical astrology texts and your personal chart. Multi-turn conversations, real guidance.",
               href: "/advisor",
-              cta: "Ask the advisor",
+              cta: "Ask Jehana",
             },
             {
               icon: Heart,
@@ -155,14 +155,14 @@ export default function HomePage() {
             {
               icon: Moon,
               title: "Daily Horoscopes",
-              desc: "Personalised daily and weekly readings for all twelve signs. Mood, focus, lucky numbers, and guidance for love, career, and health.",
+              desc: "The universe moves — and so do you. Daily and weekly readings with mood, focus, lucky numbers, and guidance.",
               href: "/horoscope",
               cta: "Read horoscopes",
             },
             {
               icon: Users,
               title: "Personality Profiles",
-              desc: "Deep dives into each zodiac sign's traits, strengths, challenges, love style, and career strengths. From classical sources.",
+              desc: "Deep dives into each zodiac sign's traits, strengths, challenges, love style, and career. From classical sources.",
               href: "/signs",
               cta: "Explore signs",
             },
@@ -199,7 +199,7 @@ export default function HomePage() {
       {/* Privacy Banner */}
       <section className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
         <Card className="bg-surface-muted/30 p-8 text-center">
-          <Eyebrow>Privacy First</Eyebrow>
+          <Eyebrow>The Cosmos Gave It. We Protect It.</Eyebrow>
           <h3 className="heading-serif mt-3 text-2xl font-semibold text-foreground">
             Your birth data is sacred.
           </h3>
@@ -220,10 +220,10 @@ export default function HomePage() {
             Ready to meet yourself?
           </h2>
           <p className="mt-4 text-sm text-foreground-muted">
-            Start with your birth chart. It&apos;s free, accurate, and might surprise you.
+            The universe wrote your story. Jehana reads it back to you.
           </p>
           <div className="mt-6">
-            <Link href="/birth-chart" className="btn-primary">
+            <Link href="/advisor" className="btn-primary">
               <Sparkles className="h-4 w-4" />
               Begin Your Journey
             </Link>
