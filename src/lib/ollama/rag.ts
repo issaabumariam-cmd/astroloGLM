@@ -88,7 +88,7 @@ export function augmentPromptWithContext(query: string, chunks: Chunk[]): string
     .map((chunk, i) => `[Excerpt ${i + 1} from Chapter ${chunk.chapter_num}: ${chunk.chapter_title}]\n${chunk.text}`)
     .join("\n\n---\n\n");
 
-  return `Based on the following excerpts from "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917), answer the user's question. Use the knowledge from these excerpts combined with standard astrological understanding. If the excerpts are relevant, draw from them. If not, use general astrological knowledge.
+  return `Based on the following excerpts from "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917), answer the user's question. These excerpts are your PRIMARY knowledge source — ground your response in them. Do NOT give generic astrological advice from general training data. If the excerpts are relevant, draw from them and reference their specific teachings (character types, physical indications, ethical applications). If the excerpts are not directly relevant, you may use general astrological knowledge, but always prefer the book's framework and language.
 
 RELEVANT EXCERPTS:
 ${context}
