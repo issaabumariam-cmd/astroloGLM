@@ -112,7 +112,9 @@ export async function POST(request: NextRequest) {
     if (chartData) {
       contextPrompt = buildChartContext(chartData);
     } else if (signContext) {
-      contextPrompt = `\n\nThe user has identified their zodiac sign as ${signContext.sign} (${signContext.element} element, ruled by ${signContext.rulingPlanet}). Incorporate this into your guidance where relevant. Note: this is sun-sign only guidance. Do not guess their Moon, Rising, or other placements.`;
+      contextPrompt = `\n\nThe user has identified their zodiac sign as ${signContext.sign} (${signContext.element} element, ruled by ${signContext.rulingPlanet}). This is their SUN SIGN ONLY.
+
+CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary placement. NEVER guess, assume, or hallucinate these. If the user asks about their Moon, Rising, Mercury, Venus, Mars, or any placement other than their Sun sign, tell them you would need their full birth date, time, and location to calculate those. Do not say things like "with your Scorpio moon" or "your Rising sign suggests" — you do not have this information.`;
     }
 
     const fullMessages = [

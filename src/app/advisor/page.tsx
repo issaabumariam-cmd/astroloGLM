@@ -74,7 +74,14 @@ export default function AdvisorPage() {
   const [exchangeCount, setExchangeCount] = useState(0);
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [chartData, setChartData] = useState<unknown>(null);
+  const [chartData, setChartData] = useState<{
+    sun: { signName: string; degreesInSign: number; signId: string };
+    moon: { signName: string; degreesInSign: number; signId: string };
+    rising: { signName: string; degreesInSign: number; signId: string };
+    planets: { name: string; signName: string; degreesInSign: number; house?: number; retrograde?: boolean }[];
+    houses: { num: number; signId: string; cusp: number }[];
+    aspects: { planet1: string; planet2: string; type: string; orb: number; glyph: string }[];
+  } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -188,19 +195,30 @@ export default function AdvisorPage() {
 
     const sign = getSignById(selectedSign);
 
+    const payload = {
+      messages: newMessages
+        .filter((m) => !m.isHook)
+        .map((m) => ({ role: m.role, content: m.content })),
+      chartData: chartData || undefined,
+      signContext: !chartData && sign
+        ? { sign: sign.name, element: sign.element, rulingPlanet: sign.rulingPlanet }
+        : undefined,
+    };
+
+    console.log("[Advisor] Sending to chat API:", {
+      hasChartData: !!payload.chartData,
+      sun: payload.chartData?.sun?.signName,
+      moon: payload.chartData?.moon?.signName,
+      rising: payload.chartData?.rising?.signName,
+      signContext: payload.signContext,
+      messageCount: payload.messages.length,
+    });
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages
-            .filter((m) => !m.isHook)
-            .map((m) => ({ role: m.role, content: m.content })),
-          chartData: chartData || undefined,
-          signContext: !chartData && sign
-            ? { sign: sign.name, element: sign.element, rulingPlanet: sign.rulingPlanet }
-            : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error("AI service unavailable");

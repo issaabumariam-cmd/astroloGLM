@@ -58,6 +58,14 @@ export default function BirthChartPage() {
           sunDegrees: chart.sun.degreesInSign,
           moonDegrees: chart.moon.degreesInSign,
           risingDegrees: chart.rising.degreesInSign,
+          chartData: {
+            sun: chart.sun,
+            moon: chart.moon,
+            rising: chart.rising,
+            planets: chart.planets,
+            houses: chart.houses,
+            aspects: chart.aspects,
+          },
         }),
       });
       if (!response.ok) throw new Error("Failed");
