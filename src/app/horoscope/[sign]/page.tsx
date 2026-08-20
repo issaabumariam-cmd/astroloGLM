@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Briefcase, Heart as HeartIcon, Moon } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors, elementDescriptions } from "@/lib/astrology/signs";
-import { generateDailyHoroscope, generateWeeklyHoroscope } from "@/lib/astrology/horoscope";
+import { generateAIHoroscope } from "@/lib/astrology/horoscope-ai";
 import { Eyebrow, Card, OrnateDivider } from "@/components/shared/ui-primitives";
 import { ShareButton } from "@/components/shared/share-button";
 import { planets } from "@/lib/astrology/planets";
@@ -11,13 +11,15 @@ export function generateStaticParams() {
   return zodiacSigns.map((sign) => ({ sign: sign.id }));
 }
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: PageProps<"/horoscope/[sign]">) {
   const { sign } = await params;
   const signData = getSignById(sign);
   if (!signData) return { title: "Horoscope" };
   return {
     title: `${signData.name} Daily Horoscope`,
-    description: `Today's horoscope for ${signData.name}. Love, career, health guidance and mood for ${signData.dates}.`,
+    description: `Today's horoscope for ${signData.name}. Book-grounded AI reading with real planetary transits.`,
   };
 }
 
@@ -27,8 +29,17 @@ export default async function SignHoroscopePage({ params }: PageProps<"/horoscop
   if (!sign) notFound();
 
   const today = new Date();
-  const daily = generateDailyHoroscope(sign, today);
-  const weekly = generateWeeklyHoroscope(sign, today);
+
+  let daily, weekly;
+  try {
+    [daily, weekly] = await Promise.all([
+      generateAIHoroscope(sign, today, "daily"),
+      generateAIHoroscope(sign, today, "weekly"),
+    ]);
+  } catch {
+    notFound();
+  }
+
   const rulingPlanet = planets.find((p) => p.id === sign.rulingPlanet.toLowerCase()) || planets[0];
 
   return (
@@ -71,60 +82,50 @@ export default async function SignHoroscopePage({ params }: PageProps<"/horoscop
           <p className="text-base leading-relaxed text-foreground">{daily.content}</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground-muted">
-              Mood: {"★".repeat(daily.mood)}{"☆".repeat(5 - daily.mood)}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground-muted">
-              Focus: {daily.focus}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground-muted">
               Lucky number: {daily.luckyNumber}
             </span>
             <span className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground-muted">
               Colour: {daily.luckyColor}
             </span>
+            {daily.retrogrades.length > 0 && (
+              <span className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground-muted">
+                ℞ Retrogrades: {daily.retrogrades.join(", ")}
+              </span>
+            )}
           </div>
         </Card>
       </div>
 
-      {/* Guidance Cards */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="p-5">
-          <div className="mb-3 flex items-center gap-2 text-primary">
-            <HeartIcon className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wide">Love</span>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground-muted">{daily.love}</p>
-        </Card>
-        <Card className="p-5">
-          <div className="mb-3 flex items-center gap-2 text-primary">
-            <Briefcase className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wide">Career</span>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground-muted">{daily.career}</p>
-        </Card>
-        <Card className="p-5">
-          <div className="mb-3 flex items-center gap-2 text-primary">
-            <Moon className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wide">Wellbeing</span>
-          </div>
-          <p className="text-sm leading-relaxed text-foreground-muted">{daily.health}</p>
-        </Card>
-      </div>
+      {/* Book Sources */}
+      {daily.sources.length > 0 && (
+        <div className="mb-8">
+          <details className="group">
+            <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground-muted hover:text-primary">
+              <BookOpen className="h-4 w-4" />
+              From the Book ({daily.sources.length} passages)
+            </summary>
+            <div className="mt-3 space-y-3">
+              {daily.sources.map((s, i) => (
+                <Card key={i} className="p-4">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-primary">Ch.{s.chapter_num}: {s.chapter_title}</span>
+                    {s.score !== undefined && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{(s.score * 100).toFixed(0)}% match</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm text-foreground-muted">{s.text}</p>
+                </Card>
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
 
-      {/* Weekly Preview */}
+      {/* Weekly Reading */}
       <div className="mb-8">
         <Eyebrow>This Week</Eyebrow>
         <Card className="mt-3 p-6">
-          <p className="text-sm font-medium text-primary">Theme: {weekly.theme}</p>
-          <p className="mt-3 text-base leading-relaxed text-foreground-muted">{weekly.content}</p>
-          <ul className="mt-4 space-y-2">
-            {weekly.highlights.map((h, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-foreground-muted">
-                <span className="mt-1 text-primary">✦</span>
-                {h}
-              </li>
-            ))}
-          </ul>
+          <p className="text-base leading-relaxed text-foreground-muted">{weekly.content}</p>
         </Card>
       </div>
 

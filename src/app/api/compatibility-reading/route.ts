@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
 import { calculateCompatibility } from "@/lib/astrology/compatibility";
-import { buildPrompt } from "@/lib/prompts";
+import { buildPrompt, getPrompt } from "@/lib/prompts";
+import fs from "fs";
+import path from "path";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
+const CACHE_DIR = path.join(process.cwd(), "data", "compatibility_cache");
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,13 +61,26 @@ Elemental dynamic: ${compat.elementMatch}`;
       bookSection
     );
 
+    // Check cache (same sign pair = same reading, cached permanently)
+    const cacheKey = [sign1, sign2].sort().join("_");
+    const cacheFile = path.join(CACHE_DIR, `${cacheKey}.json`);
+    if (fs.existsSync(cacheFile)) {
+      try {
+        const cached = JSON.parse(fs.readFileSync(cacheFile, "utf-8"));
+        return NextResponse.json({ ...cached, cached: true });
+      } catch {}
+    }
+
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: getPrompt("jehanaPersona") },
+          { role: "user", content: prompt },
+        ],
         options: { temperature: 0.75, top_p: 0.9, seed: 42 },
       }),
     });
@@ -80,7 +96,7 @@ Elemental dynamic: ${compat.elementMatch}`;
       return NextResponse.json({ error: "Could not generate reading" }, { status: 500 });
     }
 
-    return NextResponse.json({
+    const result = {
       reading,
       sources: chunks.map((c) => ({
         chapter_num: c.chapter_num,
@@ -88,7 +104,14 @@ Elemental dynamic: ${compat.elementMatch}`;
         text: c.text.substring(0, 200),
         score: c.score,
       })),
-    });
+      cached: false,
+    };
+
+    // Save to cache
+    if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2), "utf-8");
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Compatibility reading error:", error);
     return NextResponse.json({ error: "Could not generate reading" }, { status: 500 });

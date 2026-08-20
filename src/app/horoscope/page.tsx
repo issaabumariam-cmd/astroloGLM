@@ -1,22 +1,28 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { zodiacSigns } from "@/lib/astrology/signs";
-import { generateDailyHoroscope } from "@/lib/astrology/horoscope";
+import { generateAIHoroscope } from "@/lib/astrology/horoscope-ai";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { elementColors } from "@/lib/astrology/signs";
 
 export const metadata = {
   title: "Daily Horoscope",
-  description: "Today's horoscope for all twelve zodiac signs. Love, career, health, and mood guidance updated daily.",
+  description: "Today's horoscope for all twelve zodiac signs. Book-grounded AI readings with real planetary transits.",
 };
 
-export default function HoroscopePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HoroscopePage() {
   const today = new Date();
+
+  const horoscopes = await Promise.all(
+    zodiacSigns.map((sign) => generateAIHoroscope(sign, today).catch(() => null))
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
       <div className="mb-10 text-center">
-        <Eyebrow>Daily Guidance</Eyebrow>
+        <Eyebrow>Daily Guidance · Book-Grounded</Eyebrow>
         <h1 className="heading-serif mt-2 text-4xl font-semibold text-foreground sm:text-5xl">
           Today&apos;s Horoscopes
         </h1>
@@ -31,8 +37,8 @@ export default function HoroscopePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {zodiacSigns.map((sign) => {
-          const horoscope = generateDailyHoroscope(sign, today);
+        {zodiacSigns.map((sign, i) => {
+          const horoscope = horoscopes[i];
           return (
             <Link key={sign.id} href={`/horoscope/${sign.id}`}>
               <Card hover className="h-full p-5">
@@ -49,12 +55,14 @@ export default function HoroscopePage() {
                     </h2>
                     <p className="text-xs text-foreground-subtle">{sign.dates}</p>
                   </div>
-                  <div className="ml-auto text-xs font-medium text-foreground-muted">
-                    {"★".repeat(horoscope.mood)}
-                  </div>
+                  {horoscope?.retrogrades && horoscope.retrogrades.length > 0 && (
+                    <div className="ml-auto text-xs font-medium text-foreground-muted">
+                      ℞ {horoscope.retrogrades.length}
+                    </div>
+                  )}
                 </div>
                 <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-foreground-muted">
-                  {horoscope.content}
+                  {horoscope?.content || "Generating..."}
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-primary">
                   <span>Read more</span>

@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, AlertCircle, Heart, Briefcase, Star } from "lucide-react";
+import { ArrowLeft, Check, AlertCircle, Heart, Briefcase, Star, Sparkles } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors, elementDescriptions } from "@/lib/astrology/signs";
 import { planets } from "@/lib/astrology/planets";
 import { Eyebrow, Card, OrnateDivider, Tag } from "@/components/shared/ui-primitives";
 import { retrieveRelevantChunks } from "@/lib/ollama/rag";
+import { generateSignReading } from "@/lib/astrology/sign-reading";
 import { BookOpen } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return zodiacSigns.map((sign) => ({ sign: sign.id }));
@@ -179,22 +182,33 @@ export default async function SignProfilePage({ params }: PageProps<"/signs/[sig
         </Card>
       </div>
 
-      {/* From the Book */}
+      {/* Jehana's Reading + From the Book */}
       {await (async () => {
-        const bookChunks = await retrieveRelevantChunks(
-          `${sign.name} ascendant personality character traits physical type ${sign.rulingPlanet} ${sign.element}`,
-          4
-        );
-        if (bookChunks.length === 0) return null;
+        const reading = await generateSignReading(sign);
+        if (!reading) return null;
         return (
           <div className="mt-8">
-            <Eyebrow><BookOpen className="inline h-3 w-3 mr-1" />From the Book</Eyebrow>
+            {/* Jehana's Interpretation */}
+            {reading.interpretation && (
+              <div className="mb-6">
+                <Eyebrow><Sparkles className="inline h-3 w-3 mr-1" />Jehana&apos;s Reading</Eyebrow>
+                <p className="mt-2 text-xs text-foreground-subtle">
+                  An AI interpretation grounded in the book&apos;s wisdom.
+                </p>
+                <Card className="mt-3 p-5">
+                  <p className="text-base leading-relaxed text-foreground">{reading.interpretation}</p>
+                </Card>
+              </div>
+            )}
+
+            {/* Source Text */}
+            <Eyebrow><BookOpen className="inline h-3 w-3 mr-1" />Source Text from the Book</Eyebrow>
             <p className="mt-2 text-xs text-foreground-subtle">
               Passages from &ldquo;Astrology: Its Technics and Ethics&rdquo; by C.A.Q. Libra (1917),
               retrieved via semantic search.
             </p>
             <div className="mt-4 space-y-3">
-              {bookChunks.map((chunk, i) => (
+              {reading.sources.map((chunk, i) => (
                 <Card key={i} className="p-4">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="font-medium text-primary">Ch.{chunk.chapter_num}: {chunk.chapter_title}</span>

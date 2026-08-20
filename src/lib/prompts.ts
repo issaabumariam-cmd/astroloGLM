@@ -313,7 +313,12 @@ export function getPrompt(key: PromptKey): string {
 export function buildPrompt(key: PromptKey, ...sections: string[]): string {
   const config = loadPrompts();
   const persona = config.jehanaPersona;
-  const task = config[key];
-  const parts = [persona, ...sections, task].filter((s) => s.trim().length > 0);
-  return parts.join("\n\n");
+  let task = config[key];
+  const parts = [persona, ...sections];
+
+  // Interpolate template variables in the task section
+  // Variables are passed as a simple object via the last section if it's JSON-like
+  // For now, we just concatenate — the routes handle variable substitution via taskOverride
+  parts.push(task);
+  return parts.filter((s) => s.trim().length > 0).join("\n\n");
 }
