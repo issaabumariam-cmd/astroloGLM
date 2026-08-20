@@ -113,7 +113,7 @@ export default function BookPage() {
         <Eyebrow>Unlock the Full Library</Eyebrow>
         <p className="mt-2 text-sm text-foreground-muted">
           Premium members get access to all 14 chapters, searchable text, and AI-assisted
-          exploration of this classic work — the same knowledge base that powers Echo.
+          exploration of this classic work — the same knowledge base that powers Jehana.
         </p>
         <Link href="/pricing" className="btn-secondary mt-4">Explore Premium</Link>
       </Card>

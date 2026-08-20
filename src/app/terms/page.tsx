@@ -42,7 +42,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-sm font-semibold text-foreground">6. User Conduct</h2>
-          <p className="mt-1">You agree not to: abuse the AI advisor, attempt to extract the knowledge base, scrape content at scale, or use the service for any illegal purpose.</p>
+          <p className="mt-1">You agree not to: abuse the Jehana, attempt to extract the knowledge base, scrape content at scale, or use the service for any illegal purpose.</p>
         </section>
 
         <section>

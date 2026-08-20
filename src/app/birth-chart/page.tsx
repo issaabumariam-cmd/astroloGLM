@@ -374,7 +374,7 @@ export default function BirthChartPage() {
             ) : aiLoading ? (
               <div className="mt-3 flex items-center gap-2 text-sm text-foreground-muted">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Echo is reading your chart through the book...
+                Jehana is reading your chart through the book...
               </div>
             ) : (
               <button onClick={fetchAIInterpretation} className="btn-primary mt-3 text-sm">

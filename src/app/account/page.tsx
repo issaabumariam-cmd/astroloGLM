@@ -73,7 +73,7 @@ export default function AccountPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide">Chat History</h2>
         </div>
         <p className="text-sm text-foreground-muted">
-          Sign in to save your AI advisor conversations across devices.
+          Sign in to save your Jehana conversations across devices.
         </p>
       </Card>
 

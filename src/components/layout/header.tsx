@@ -13,7 +13,7 @@ const navLinks = [
   { href: "/signs", label: "Signs" },
   { href: "/compatibility", label: "Compatibility" },
   { href: "/birth-chart", label: "Birth Chart" },
-  { href: "/advisor", label: "AI Advisor" },
+  { href: "/advisor", label: "Chat" },
   { href: "/book", label: "Library" },
 ];
 
@@ -43,9 +43,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/advisor" className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-primary-hover sm:inline-flex">
+          <Link href="/echo" className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-primary-hover sm:inline-flex">
             <Sparkles className="h-4 w-4" />
-            Ask the Stars
+            Meet Jehana
           </Link>
           <Link href="/pricing" className="hidden text-sm font-medium text-foreground-muted transition-colors hover:text-foreground md:block">
             Premium

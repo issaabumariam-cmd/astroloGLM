@@ -3,7 +3,7 @@ import { Eyebrow, Card, OrnateDivider } from "@/components/shared/ui-primitives"
 
 export const metadata = {
   title: "Premium",
-  description: "Unlock unlimited AI advisor, full birth chart interpretation, deep compatibility readings, and the complete astrology library.",
+  description: "Unlock unlimited Jehana, full birth chart interpretation, deep compatibility readings, and the complete astrology library.",
 };
 
 const freeFeatures = [
@@ -11,13 +11,13 @@ const freeFeatures = [
   "Birth chart calculation (Big Three)",
   "Personality profiles",
   "Compatibility scores",
-  "3 AI advisor questions per month",
+  "3 Jehana questions per month",
   "Book sample chapters",
 ];
 
 const premiumFeatures = [
   "Everything in Free, plus:",
-  "Unlimited AI astrology advisor",
+  "Unlimited Jehana � your astrological guide",
   "Full birth chart interpretation",
   "Deep compatibility readings",
   "Weekly & monthly forecasts",
@@ -34,10 +34,10 @@ export default function PricingPage() {
       <div className="mb-10 text-center">
         <Eyebrow>Plans</Eyebrow>
         <h1 className="heading-serif mt-2 text-4xl font-semibold text-foreground sm:text-5xl">
-          Choose Your Journey
+          Continue the conversation.
         </h1>
         <p className="mt-3 text-sm text-foreground-muted">
-          Free forever. Upgrade when you&apos;re ready to go deeper.
+          The universe wrote your story. Free lets you peek. Premium lets you read every page.
         </p>
       </div>
 
@@ -104,8 +104,8 @@ export default function PricingPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { icon: Shield, title: "Cancel Anytime", desc: "No contracts, no friction. Cancel in one click." },
-          { icon: Shield, title: "Privacy First", desc: "Your birth data is encrypted, never sold, GDPR-compliant." },
-          { icon: Shield, title: "Swiss Ephemeris", desc: "The global standard for astrological calculation accuracy." },
+          { icon: Shield, title: "The Cosmos Gave It. We Protect It.", desc: "Your birth data is encrypted, never sold, GDPR-compliant." },
+          { icon: Shield, title: "Real Astronomy", desc: "Moshier ephemeris — the global standard for astrological calculation." },
         ].map((t) => (
           <div key={t.title} className="text-center">
             <t.icon className="mx-auto h-6 w-6 text-primary/60" />
@@ -122,8 +122,8 @@ export default function PricingPage() {
           {[
             { q: "Is the free tier really free?", a: "Yes — daily horoscopes, birth chart calculation, and personality profiles are free forever. No card required." },
             { q: "Can I cancel anytime?", a: "Absolutely. Cancel in one click from your account. No questions, no retention dark patterns." },
-            { q: "Is my birth data safe?", a: "We encrypt your birth details, never sell them, never use them for advertising, and let you delete them anytime. GDPR-compliant by design." },
-            { q: "What's the AI advisor?", a: "An AI trained on classical astrology texts that you can chat with about your sign, chart, transits, relationships, and life questions." },
+            { q: "Is my birth data safe?", a: "The cosmos gave it — we protect it. We encrypt your birth details, never sell them, never use them for advertising, and let you delete them anytime. GDPR-compliant by design." },
+            { q: "What's Jehana?", a: "Jehana is your astrological guide — an AI trained on classical astrology texts who reads your chart and echoes it back. Not predictions. Reflections of who you already are." },
           ].map((faq) => (
             <Card key={faq.q} className="p-5">
               <h3 className="text-sm font-semibold text-foreground">{faq.q}</h3>

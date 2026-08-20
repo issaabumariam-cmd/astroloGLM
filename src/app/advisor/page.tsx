@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Star, Moon, Heart, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Loader2, Lock, Crown } from "lucide-react";
+import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Loader2, Crown } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
@@ -475,7 +475,7 @@ export default function AdvisorPage() {
               <div className="flex items-center gap-2">
                 <Crown className="h-4 w-4 text-primary" />
                 <p className="text-sm font-medium text-foreground">
-                  You've used your 3 free questions. Unlock unlimited chat with Premium.
+                  You&apos;ve used your 3 free questions. Unlock unlimited chat with Premium.
                 </p>
               </div>
               <a href="/pricing" className="btn-primary mt-3 text-sm">

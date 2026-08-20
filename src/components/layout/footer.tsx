@@ -9,7 +9,7 @@ const footerLinks = {
     { href: "/birth-chart", label: "Birth Chart" },
   ],
   Features: [
-    { href: "/advisor", label: "AI Advisor" },
+    { href: "/advisor", label: "Jehana" },
     { href: "/book", label: "Library" },
     { href: "/transits", label: "Current Transits" },
     { href: "/pricing", label: "Premium" },
@@ -35,11 +35,11 @@ export function Footer() {
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-foreground-muted">
-              Cosmic self-knowledge through real natal charts, AI guidance, and
-              centuries of astrological wisdom.
+              The universe wrote your story. Jehana reads it back to you.
+              Real astronomy, classical wisdom, cosmic self-knowledge.
             </p>
             <p className="mt-4 text-xs text-foreground-subtle">
-              Powered by the Swiss Ephemeris — the global standard for
+              Powered by the Moshier ephemeris — the global standard for
               astronomical calculation.
             </p>
           </div>
@@ -65,11 +65,10 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
           <p className="text-xs text-foreground-subtle">
-            © {new Date().getFullYear()} Astrolo. For entertainment and
-            self-reflection.
+            © {new Date().getFullYear()} Astrolo. The cosmos, echoed back.
           </p>
           <p className="text-xs text-foreground-subtle">
-            Your birth data is sacred. We never sell it.
+            The cosmos gave it — we protect it.
           </p>
         </div>
       </div>

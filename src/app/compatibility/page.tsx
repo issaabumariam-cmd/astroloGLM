@@ -181,7 +181,7 @@ export default function CompatibilityPage() {
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">Premium</span>
             </div>
             <p className="mt-2 text-xs text-foreground-subtle">
-              Echo reads the synastry chapter and interprets your connection through classical wisdom.
+              Jehana reads the synastry chapter and interprets your connection through classical wisdom.
             </p>
             {aiReading ? (
               <div className="mt-4">
@@ -207,7 +207,7 @@ export default function CompatibilityPage() {
             ) : aiLoading ? (
               <div className="mt-4 flex items-center gap-2 text-sm text-foreground-muted">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Echo is reading your synastry...
+                Jehana is reading your synastry...
               </div>
             ) : (
               <button onClick={fetchAIReading} className="btn-primary mt-4 text-sm">

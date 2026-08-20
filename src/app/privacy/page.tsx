@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li>Email address (if you create an account)</li>
             <li>Birth date, time, and location (only if you enter them for chart calculation)</li>
-            <li>Chat messages with the AI advisor (only if you have an account)</li>
+            <li>Chat messages with the Jehana (only if you have an account)</li>
             <li>Anonymous usage statistics (only with your consent — see cookie banner)</li>
           </ul>
           <p className="mt-2">We do <strong>not</strong> collect: browsing history, device fingerprints, advertising identifiers, or any third-party tracking data.</p>

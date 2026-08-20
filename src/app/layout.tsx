@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s · Astrolo",
   },
   description:
-    "Discover your natal chart, daily horoscopes, and AI-powered astrological guidance. Premium astrology for the modern seeker.",
+    "The cosmos, echoed back. Meet Jehana — your astrological guide. Real natal charts, AI-powered horoscopes, and classical wisdom. Not predictions. Reflections of who you already are.",
   keywords: [
     "astrology",
     "horoscope",
@@ -39,7 +39,9 @@ export const metadata: Metadata = {
     "birth chart",
     "zodiac",
     "compatibility",
+    "Jehana",
     "AI astrologer",
+    "cosmic self-knowledge",
   ],
   authors: [{ name: "Astrolo" }],
   manifest: "/manifest.json",
@@ -54,17 +56,17 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Astrolo — Cosmic Self-Knowledge",
+    title: "Astrolo — The Cosmos, Echoed Back",
     description:
-      "Discover your natal chart, daily horoscopes, and AI-powered astrological guidance.",
+      "Meet Jehana. The universe has already written your story — every planet placed the moment you arrived. Jehana reads it and echoes it back.",
     type: "website",
     locale: "en_GB",
     siteName: "Astrolo",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Astrolo — Cosmic Self-Knowledge",
-    description: "Premium astrology: natal charts, horoscopes, and AI-powered guidance.",
+    title: "Astrolo — The Cosmos, Echoed Back",
+    description: "The universe wrote your story. Jehana reads it back to you.",
   },
   metadataBase: new URL("https://astrolo.app"),
   alternates: {
@@ -77,7 +79,7 @@ const jsonLd = {
   "@type": "WebApplication",
   name: "Astrolo",
   description:
-    "Premium astrology PWA with real natal charts, AI advisor, and horoscopes. Powered by the Moshier ephemeris.",
+    "The cosmos, echoed back. Meet Jehana — your astrological guide. Real natal charts, AI-powered horoscopes, and classical wisdom.",
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Web",
   offers: {
@@ -93,7 +95,7 @@ const jsonLd = {
   },
   featureList: [
     "Natal chart calculation (Moshier ephemeris)",
-    "AI astrology advisor (RAG-powered)",
+    "Jehana — AI astrological guide (RAG-powered)",
     "Daily horoscopes for all 12 zodiac signs",
     "Zodiac sign personality profiles",
     "Compatibility analysis",
