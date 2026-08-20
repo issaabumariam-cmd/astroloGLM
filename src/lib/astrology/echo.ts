@@ -3,6 +3,7 @@
 
 import type { ChartData, PlanetPosition } from "./chart";
 import { retrieveRelevantChunks } from "../ollama/rag";
+import { buildPrompt } from "../prompts";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
@@ -21,31 +22,6 @@ export type JehanaIntro = {
   hookQuestions: HookQuestion[];
   followUp: string;
 };
-
-const Jehana_SYSTEM_PROMPT = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
-
-Your personality:
-- Warm, insightful, concise — never robotic
-- You ask questions that make people reflect on themselves
-- You reference astrology naturally, not academically
-- You focus on self-knowledge, growth, and practical wisdom
-- You are NOT a fortune teller — you are a guide
-- You speak in second person ("you"), never third person
-- You keep your opening message under 150 words
-- You end with curiosity, not declarations
-
-Your knowledge base:
-- You have studied "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917)
-- You understand natal charts, planetary aspects, houses, and signs
-- You connect astrological patterns to real-life situations (conflict, energy, relationships, career)
-- You frame challenges as growth opportunities, not fixed destinies
-
-When given a natal chart, you:
-1. Find the most interesting/unique patterns (not just "you're a Leo")
-2. Identify tension points (squares, oppositions) as growth areas
-3. Identify harmonious patterns (trines, sextiles) as strengths
-4. Generate 3 personalized hook questions based on specific chart placements
-5. Each question connects an astrological pattern to a real-life situation`;
 
 export async function generateJehanaIntro(
   chart: ChartData,
@@ -85,47 +61,15 @@ ${chart.aspects.filter((a) => a.type === "trine").slice(0, 3).map((a) => `- ${a.
       ? bookChunks.map((c, i) => `[Excerpt ${i + 1}: ${c.text.substring(0, 300)}]`).join("\n")
       : "";
 
-    const prompt = `${Jehana_SYSTEM_PROMPT}
+    const introNote = `Based on this natal chart, generate Jehana's opening message and 3 personalized hook questions.`;
+    const bookSection = bookContext ? `Relevant excerpts from C.A.Q. Libra's book:\n${bookContext}` : "";
 
-Based on this natal chart, generate Jehana's opening message and 3 personalized hook questions.
-
-${chartSummary}
-
-${bookContext ? `Relevant excerpts from C.A.Q. Libra's book:\n${bookContext}` : ""}
-
-Generate a JSON response with this exact structure:
-{
-  "greeting": "A warm, personal greeting using the person's chart. 1-2 sentences. Not generic — reference something specific from their chart.",
-  "personalitySummary": "A 3-4 sentence summary of who they are, based on their Sun/Moon/Rising and key aspects. Not generic astrology — reference specific placements and what they mean together. Ground it in the book excerpts where relevant.",
-  "hookQuestions": [
-    {
-      "id": "conflict",
-      "question": "A question about how they handle conflict or challenges — personalized to their Mars/Saturn/aspects. Make it feel like a life coach asking, not an astrologer.",
-      "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Jehana will reveal when they answer"
-    },
-    {
-      "id": "energy",
-      "question": "A question about what drains or energizes them — personalized to their Moon/Sun/12th house. Life coach framing.",
-      "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Jehana will reveal when they answer"
-    },
-    {
-      "id": "strengths",
-      "question": "A question about their hidden strengths or natural gifts — personalized to their trines/Jupiter/Venus. Uplifting framing.",
-      "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Jehana will reveal when they answer"
-    }
-  ],
-  "followUp": "A closing line that invites them to choose a question. 1 sentence. Warm, not pushy."
-}
-
-Important:
-- The greeting should feel like Jehana already knows them
-- The personality summary should reveal something they might not know about themselves
-- The hook questions should feel personal, not like a quiz — they should make the person think "how did you know that?"
-- Reference the book's wisdom naturally, not academically
-- The tone is a wise friend, not a therapist or a fortune teller`;
+    const prompt = buildPrompt(
+      "jehanaIntro",
+      introNote,
+      chartSummary,
+      bookSection
+    );
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
 import { calculateCompatibility } from "@/lib/astrology/compatibility";
+import { buildPrompt } from "@/lib/prompts";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
@@ -33,26 +34,7 @@ export async function POST(request: NextRequest) {
       ? chunks.map((c) => `[Ch.${c.chapter_num}: ${c.chapter_title}]\n${c.text}`).join("\n\n---\n\n")
       : "";
 
-    const prompt = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
-
-Your personality:
-- Warm, insightful, concise — never robotic
-- You ask questions that make people reflect on themselves
-- You reference astrology naturally, not academically
-- You focus on self-knowledge, growth, and practical wisdom
-- You are NOT a fortune teller — you are a guide
-- You speak in second person ("you"), never third person
-- You frame challenges as growth opportunities, not fixed destinies
-
-Your knowledge base:
-- You have studied "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917)
-- You understand natal charts, planetary aspects, houses, and signs
-- You connect astrological patterns to real-life situations
-
-IMPORTANT: Use ONLY the chart data provided below. Never guess or hallucinate
-planetary positions, houses, or aspects. If you don't know a placement, say so.
-
-=== COMPATIBILITY ANALYSIS ===
+    const compatSection = `=== COMPATIBILITY ANALYSIS ===
 Two people want to understand their compatibility:
 - Person A: ${s1.name} (${s1.element}, ${s1.modality}, ruled by ${s1.rulingPlanet})
 - Person B: ${s2.name} (${s2.element}, ${s2.modality}, ruled by ${s2.rulingPlanet})
@@ -64,19 +46,17 @@ Compatibility scores:
 - Emotional resonance: ${compat.emotionScore}%
 - Overall: ${compat.overallScore}%
 
-Elemental dynamic: ${compat.elementMatch}
+Elemental dynamic: ${compat.elementMatch}`;
 
-${bookContext ? `Relevant excerpts from C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917):\n${bookContext}` : ""}
+    const bookSection = bookContext
+      ? `Relevant excerpts from C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917):\n${bookContext}`
+      : "";
 
-Write a 200-300 word compatibility reading that:
-1. Opens with a vivid image of their dynamic (not generic "you two are...")
-2. Explains the elemental interaction (fire+air, earth+water, etc.) with book wisdom
-3. Addresses their specific strengths as a couple
-4. Identifies growth areas — frame challenges as opportunities, not problems
-5. Offers practical relationship advice grounded in astrological wisdom
-6. Ends with a reflection question for both partners
-
-Tone: wise, warm, specific. Not a horoscope — a relationship guide. Reference the book's wisdom naturally. Never introduce yourself by name unless asked — you are Jehana, speaking directly to the person.`;
+    const prompt = buildPrompt(
+      "compatibilityReading",
+      compatSection,
+      bookSection
+    );
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",

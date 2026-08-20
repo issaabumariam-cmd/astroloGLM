@@ -197,41 +197,139 @@ function ChunksTab() {
   );
 }
 
+type PromptEntry = {
+  key: string;
+  label: string;
+  description: string;
+  usedBy: string;
+  value: string;
+};
+
 function PromptsTab() {
-  const [systemPrompt, setSystemPrompt] = useState("");
+  const [prompts, setPrompts] = useState<PromptEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [activeKey, setActiveKey] = useState<string>("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    let active = true;
     fetch("/api/admin/prompts")
       .then((r) => r.json())
-      .then((data) => { setSystemPrompt(data.systemPrompt || ""); setLoading(false); })
+      .then((data) => {
+        if (!active) return;
+        const list = data.prompts || [];
+        setPrompts(list);
+        if (list.length > 0) setActiveKey(list[0].key);
+        const draftMap: Record<string, string> = {};
+        for (const p of list) draftMap[p.key] = p.value;
+        setDrafts(draftMap);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
+    return () => { active = false; };
   }, []);
 
-  const handleSave = () => {
+  const handleSave = (key: string) => {
     fetch("/api/admin/prompts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ systemPrompt }),
-    }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); });
+      body: JSON.stringify({ [key]: drafts[key] }),
+    })
+      .then((r) => r.json())
+      .then(() => {
+        setSaved(key);
+        setTimeout(() => setSaved(null), 2000);
+      });
+  };
+
+  const handleReset = (key: string) => {
+    const original = prompts.find((p) => p.key === key);
+    if (original) {
+      setDrafts((d) => ({ ...d, [key]: original.value }));
+    }
   };
 
   if (loading) return <div className="text-sm text-foreground-muted">Loading prompts...</div>;
 
+  const active = prompts.find((p) => p.key === activeKey);
+
   return (
     <div>
-      <h3 className="text-sm font-semibold text-foreground mb-2">AI Advisor System Prompt</h3>
-      <p className="text-xs text-foreground-muted mb-3">This prompt controls how the AI advisor behaves. Changes apply to all new conversations.</p>
-      <textarea
-        value={systemPrompt}
-        onChange={(e) => setSystemPrompt(e.target.value)}
-        rows={15}
-        className="input-field font-mono text-xs"
-      />
-      <button onClick={handleSave} className="btn-primary mt-3">
-        {saved ? "Saved!" : "Save Prompt"}
-      </button>
+      <h3 className="text-sm font-semibold text-foreground mb-1">AI Prompt Configuration</h3>
+      <p className="text-xs text-foreground-muted mb-4">
+        Every AI prompt in the app is editable here. Changes apply instantly to all new requests.
+        The <strong>Jehana Persona</strong> is the shared base — all other prompts inherit it automatically.
+      </p>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
+        {/* Sidebar: prompt list */}
+        <div className="space-y-1">
+          {prompts.map((p) => {
+            const isModified = drafts[p.key] !== p.value;
+            return (
+              <button
+                key={p.key}
+                onClick={() => setActiveKey(p.key)}
+                className={cn(
+                  "w-full rounded-lg border px-3 py-2.5 text-left text-sm transition-all",
+                  activeKey === p.key
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border bg-surface text-foreground-muted hover:border-primary-light hover:bg-surface-muted"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium leading-tight">{p.label}</span>
+                  {isModified && (
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Unsaved changes" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Editor panel */}
+        {active && (
+          <div>
+            <Card className="p-5">
+              <div className="mb-3">
+                <h4 className="font-serif text-base font-semibold text-foreground">{active.label}</h4>
+                <p className="mt-1 text-xs text-foreground-muted">{active.description}</p>
+                <p className="mt-1.5 text-xs text-foreground-subtle">
+                  <span className="font-medium text-foreground-muted">Used by:</span> {active.usedBy}
+                </p>
+              </div>
+
+              <textarea
+                value={drafts[active.key] || ""}
+                onChange={(e) => setDrafts((d) => ({ ...d, [active.key]: e.target.value }))}
+                rows={20}
+                className="input-field font-mono text-xs leading-relaxed"
+                placeholder="Enter prompt text..."
+              />
+
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  onClick={() => handleSave(active.key)}
+                  className="btn-primary"
+                >
+                  {saved === active.key ? "Saved!" : "Save"}
+                </button>
+                <button
+                  onClick={() => handleReset(active.key)}
+                  className="btn-ghost text-xs"
+                >
+                  Reset to saved
+                </button>
+                <span className="ml-auto text-xs text-foreground-subtle">
+                  {(drafts[active.key] || "").length} chars
+                </span>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

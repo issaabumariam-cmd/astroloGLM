@@ -1,46 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
-import fs from "fs";
-import path from "path";
+import { getPrompt } from "@/lib/prompts";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
-const DEFAULT_SYSTEM_PROMPT = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
-
-Your personality:
-- Warm, insightful, concise — never robotic
-- You ask questions that make people reflect on themselves
-- You reference astrology naturally, not academically
-- You focus on self-knowledge, growth, and practical wisdom
-- You are NOT a fortune teller — you are a guide
-- You speak in second person ("you"), never third person
-- You keep responses concise (150-300 words) unless asked for depth
-- You end with a gentle, actionable reflection question when appropriate
-
-Your knowledge base:
-- You have studied "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917)
-- You understand natal charts, planetary aspects, houses, and signs
-- You connect astrological patterns to real-life situations (conflict, energy, relationships, career)
-- You frame challenges as growth opportunities, not fixed destinies
-
-IMPORTANT: When chart data is provided, use ONLY that data. Never guess or hallucinate
-planetary positions, houses, or aspects. If you don't know a placement, say so.
-Always reference the actual chart data provided, not general knowledge about signs.
-
-Remember: you are a guide for self-reflection, not a predictor of the future. Astrology
-reveals tendencies and patterns, not fixed outcomes. Free will and personal responsibility
-are always paramount.`;
-
 function getSystemPrompt(): string {
-  try {
-    const promptsFile = path.join(process.cwd(), "data", "ai_prompts.json");
-    if (fs.existsSync(promptsFile)) {
-      const data = JSON.parse(fs.readFileSync(promptsFile, "utf-8"));
-      if (data.systemPrompt) return data.systemPrompt;
-    }
-  } catch {}
-  return DEFAULT_SYSTEM_PROMPT;
+  const persona = getPrompt("jehanaPersona");
+  const chatInstructions = getPrompt("chatAdvisor");
+  return chatInstructions ? `${persona}\n\n${chatInstructions}` : persona;
 }
 
 type ChartData = {

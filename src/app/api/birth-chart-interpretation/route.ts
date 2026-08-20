@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
+import { buildPrompt } from "@/lib/prompts";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
@@ -80,39 +81,33 @@ export async function POST(request: NextRequest) {
 
     chartSection += `\n\nIMPORTANT: Use ONLY these placements. Do not guess or hallucinate any other positions.`;
 
-    const prompt = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
+    const bookSection = bookContext
+      ? `Relevant excerpts from C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917):\n${bookContext}`
+      : "";
 
-Your personality:
-- Warm, insightful, concise — never robotic
-- You ask questions that make people reflect on themselves
-- You reference astrology naturally, not academically
-- You focus on self-knowledge, growth, and practical wisdom
-- You are NOT a fortune teller — you are a guide
-- You speak in second person ("you"), never third person
-- You frame challenges as growth opportunities, not fixed destinies
+    const aspectNote = chartData?.aspects?.length
+      ? "6. References specific aspects (e.g., Sun square Mars) as growth areas or strengths\n"
+      : "";
 
-Your knowledge base:
-- You have studied "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917)
-- You understand natal charts, planetary aspects, houses, and signs
-- You connect astrological patterns to real-life situations
-
-IMPORTANT: Use ONLY the chart data provided below. Never guess or hallucinate
-planetary positions, houses, or aspects. If you don't know a placement, say so.
-
-${chartSection}
-
-${bookContext ? `Relevant excerpts from C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917):\n${bookContext}` : ""}
-
-Write a 300-400 word natal chart interpretation that:
+    const taskOverride = aspectNote
+      ? `Write a 300-400 word natal chart interpretation that:
 1. Opens with a vivid image of this person's cosmic signature — the unique blend of their Big Three
 2. Explains what their Sun placement means for their life purpose and identity
 3. Explains what their Moon placement means for their emotional world and inner needs
 4. Explains what their Rising sign means for how others see them and their approach to life
 5. Identifies the dynamic between the three — where they flow, where they tension
-${chartData?.aspects?.length ? "6. References specific aspects (e.g., Sun square Mars) as growth areas or strengths\n" : ""}6. Offers a specific life-coaching insight or growth area
+${aspectNote}6. Offers a specific life-coaching insight or growth area
 7. Ends with a reflection question
 
-Tone: wise, warm, specific. Not generic "you are a Leo." Reference the specific degree, the book's wisdom about this sign's physical type or character traits. Frame as self-knowledge, not fortune-telling. Never introduce yourself by name unless asked — you are Jehana, speaking directly to the person.`;
+Tone: wise, warm, specific. Not generic "you are a Leo." Reference the specific degree, the book's wisdom about this sign's physical type or character traits. Frame as self-knowledge, not fortune-telling. Never introduce yourself by name unless asked — you are Jehana, speaking directly to the person.`
+      : undefined;
+
+    const prompt = buildPrompt(
+      "birthChartInterpretation",
+      chartSection,
+      bookSection,
+      taskOverride || ""
+    );
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
