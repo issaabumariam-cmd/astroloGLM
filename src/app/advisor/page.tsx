@@ -298,7 +298,7 @@ export default function AdvisorPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-serif text-lg font-semibold text-foreground">Quick Chat</h3>
+                  <h3 className="font-serif text-lg font-semibold text-foreground">Echo Chat</h3>
                   <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">Free</span>
                 </div>
                 <p className="mt-1 text-sm text-foreground-muted">
@@ -317,7 +317,7 @@ export default function AdvisorPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-serif text-lg font-semibold text-foreground">Personalized Reading</h3>
+                  <h3 className="font-serif text-lg font-semibold text-foreground">Deep Echo Chat</h3>
                   <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">3 Free Questions</span>
                 </div>
                 <p className="mt-1 text-sm text-foreground-muted">
@@ -337,7 +337,7 @@ export default function AdvisorPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="text-center">
-          <Eyebrow>Quick Chat · Free</Eyebrow>
+          <Eyebrow>Echo Chat · Free</Eyebrow>
           <h1 className="heading-serif mt-2 text-3xl font-semibold text-foreground">
             Choose Your Sign
           </h1>
@@ -373,7 +373,7 @@ export default function AdvisorPage() {
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="text-center">
           <ZodiacWheel size={72} className="mx-auto text-primary spin-slow" />
-          <Eyebrow className="mt-4">Personalized Reading · 3 Free Questions</Eyebrow>
+          <Eyebrow className="mt-4">Deep Echo Chat · 3 Free Questions</Eyebrow>
           <h1 className="heading-serif mt-2 text-3xl font-semibold text-foreground">
             Enter your birth date.
           </h1>
@@ -441,7 +441,7 @@ export default function AdvisorPage() {
             <h1 className="font-serif text-lg font-semibold text-foreground">Jehana</h1>
             <p className="text-xs text-foreground-subtle">
               {getSignById(selectedSign)?.name}
-              {isPersonalized ? " · Personalized" : " · Per Sign"}
+              {isPersonalized ? " · Deep Echo" : " · Echo Chat"}
               {isPersonalized && ` · ${3 - exchangeCount} free left`}
               {" · "}
               {streaming ? "Typing..." : "Ready"}
@@ -522,11 +522,11 @@ export default function AdvisorPage() {
               <div className="flex items-center gap-2">
                 <Crown className="h-4 w-4 text-primary" />
                 <p className="text-sm font-medium text-foreground">
-                  You&apos;ve used your 3 free questions. Unlock unlimited chat with Premium.
+                  You&apos;ve used your 3 free questions. Unlock unlimited Deep Echo Chat.
                 </p>
               </div>
               <a href="/pricing" className="btn-primary mt-3 text-sm">
-                <Crown className="h-3.5 w-3.5" /> Unlock Premium — £5.99/month
+                <Crown className="h-3.5 w-3.5" /> Unlock Deep Echo — £5.99/month
               </a>
             </div>
           )}
@@ -553,7 +553,7 @@ export default function AdvisorPage() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={showUpgrade ? "Unlock Premium to continue chatting..." : "Ask Jehana anything..."}
+          placeholder={showUpgrade ? "Unlock Deep Echo to continue..." : "Ask Jehana anything..."}
           className="input-field flex-1"
           disabled={streaming || showUpgrade}
         />
