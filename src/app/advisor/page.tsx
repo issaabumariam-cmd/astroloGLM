@@ -203,6 +203,7 @@ export default function AdvisorPage() {
       signContext: !chartData && sign
         ? { sign: sign.name, element: sign.element, rulingPlanet: sign.rulingPlanet }
         : undefined,
+      tier: isPersonalized ? "premium" : "free",
     };
 
     console.log("[Advisor] Sending to chat API:", {
@@ -211,6 +212,7 @@ export default function AdvisorPage() {
       moon: payload.chartData?.moon?.signName,
       rising: payload.chartData?.rising?.signName,
       signContext: payload.signContext,
+      tier: payload.tier,
       messageCount: payload.messages.length,
     });
 

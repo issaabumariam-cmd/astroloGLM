@@ -6,6 +6,7 @@ const PROMPTS_FILE = path.join(process.cwd(), "data", "ai_prompts.json");
 export type PromptKey =
   | "jehanaPersona"
   | "chatAdvisor"
+  | "premiumAdvisor"
   | "birthChartInterpretation"
   | "compatibilityReading"
   | "horoscopeGeneration"
@@ -30,9 +31,15 @@ export const PROMPT_META: PromptMeta[] = [
   },
   {
     key: "chatAdvisor",
-    label: "Chat Advisor Instructions",
-    description: "Task instructions for the conversational chat advisor. Appended after the persona. Variables: {chartContext}, {signContext}, {ragContext}.",
-    usedBy: "/api/chat — the /advisor page chat (Quick Chat + Personalized + Premium)",
+    label: "Chat Advisor (Free Tier)",
+    description: "Task instructions for the free conversational chat advisor (Quick Chat + Personalized 3 free). Shorter responses, general guidance. Variables: {chartContext}, {signContext}, {ragContext}.",
+    usedBy: "/api/chat (tier=free) — Quick Chat and Personalized (3 free) on /advisor",
+  },
+  {
+    key: "premiumAdvisor",
+    label: "Premium Advisor (In-Depth Natal Chart)",
+    description: "Task instructions for PREMIUM subscribers only. Full in-depth natal chart conversation — deep psychological analysis, house-by-house breakdown, aspect interpretation, transit timing. Longer responses, book references, life-coaching depth. Variables: {chartContext}, {ragContext}.",
+    usedBy: "/api/chat (tier=premium) — Premium unlimited chat on /advisor",
   },
   {
     key: "birthChartInterpretation",
@@ -102,6 +109,28 @@ Guidelines specific to chat:
 - End with a gentle reflection question when the conversation invites it
 - If the user seems distressed, respond with warmth and grounding, not clinical advice
 - Never give medical, legal, or financial advice — redirect to professionals`;
+
+const DEFAULT_PREMIUM_ADVISOR = `You are in a PREMIUM conversational chat with a subscriber who has full access to their natal chart. This is an in-depth astrological consultation — not a quick Q&A. Respond as Jehana at full depth.
+
+Premium chat guidelines:
+- Give thorough, in-depth responses (300-600 words) — this is a paid consultation, not a free sample
+- When the user's natal chart is provided, analyze it like a professional astrologer would:
+  * House-by-house breakdown when relevant (e.g., "With Mercury in your 10th House of Career...")
+  * Aspect interpretation with real meaning (e.g., "Your Sun square Mars creates a tension between your identity and your drive — this is your growth edge")
+  * Elemental balance analysis (Fire/Earth/Air/Water distribution)
+  * Modal balance analysis (Cardinal/Fixed/Mutable distribution)
+  * Chart patterns (stelliums, grand trines, T-squares, yods if present)
+- Reference specific degrees and orbs when they add precision
+- Connect multiple placements together — never analyze a planet in isolation
+  (e.g., "Your Venus in Leo wants grand gestures, but your Saturn in Capricorn says 'prove it with action' — this push-pull is your relationship pattern")
+- Draw deeply from C.A.Q. Libra's book — reference character types, physical indications, and ethical applications
+- When discussing transits, reference the user's natal placements to show how the transit hits THEM specifically
+- Offer actionable, specific life-coaching grounded in their exact chart — not generic advice
+- If the user asks about timing (when will X happen?), use transit-to-natal analysis
+- End with a reflection question that invites deeper exploration — premium users want to go deep
+- If the user seems distressed, respond with warmth and grounding first, then astrological insight
+- Never give medical, legal, or financial advice — redirect to professionals
+- Remember: this person is paying for your expertise. Give them something they couldn't get from a free horoscope.`;
 
 const DEFAULT_BIRTH_CHART = `Write a 300-400 word natal chart interpretation that:
 1. Opens with a vivid image of this person's cosmic signature — the unique blend of their Big Three
@@ -182,6 +211,7 @@ Keep it under 200 words. Tone: wise friend who happens to know astrology. Do NOT
 const DEFAULTS: PromptConfig = {
   jehanaPersona: DEFAULT_PERSONA,
   chatAdvisor: DEFAULT_CHAT_ADVISOR,
+  premiumAdvisor: DEFAULT_PREMIUM_ADVISOR,
   birthChartInterpretation: DEFAULT_BIRTH_CHART,
   compatibilityReading: DEFAULT_COMPATIBILITY,
   horoscopeGeneration: DEFAULT_HOROSCOPE,

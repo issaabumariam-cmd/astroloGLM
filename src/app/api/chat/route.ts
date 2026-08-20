@@ -5,10 +5,11 @@ import { getPrompt } from "@/lib/prompts";
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
-function getSystemPrompt(): string {
+function getSystemPrompt(tier?: string): string {
   const persona = getPrompt("jehanaPersona");
-  const chatInstructions = getPrompt("chatAdvisor");
-  return chatInstructions ? `${persona}\n\n${chatInstructions}` : persona;
+  const taskKey = tier === "premium" ? "premiumAdvisor" : "chatAdvisor";
+  const taskInstructions = getPrompt(taskKey);
+  return taskInstructions ? `${persona}\n\n${taskInstructions}` : persona;
 }
 
 type ChartData = {
@@ -53,10 +54,11 @@ function buildChartContext(chart?: ChartData): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, signContext, chartData } = body as {
+    const { messages, signContext, chartData, tier } = body as {
       messages: { role: string; content: string }[];
       signContext?: { sign: string; element: string; rulingPlanet: string };
       chartData?: ChartData;
+      tier?: "free" | "premium";
     };
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -86,7 +88,7 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
     }
 
     const fullMessages = [
-      { role: "system", content: getSystemPrompt() + contextPrompt },
+      { role: "system", content: getSystemPrompt(tier) + contextPrompt },
       ...messages.map((m, i) => {
         if (m.role === "user" && i === messages.length - 1 && ragContext) {
           return { role: "user", content: ragContext };
