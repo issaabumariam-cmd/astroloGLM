@@ -17,6 +17,11 @@ const CITY_TIMEZONES: Record<string, string> = {
   amman: "Asia/Amman",
   dubai: "Asia/Dubai",
   istanbul: "Europe/Istanbul",
+  riyadh: "Asia/Riyadh",
+  jeddah: "Asia/Riyadh",
+  mecca: "Asia/Riyadh",
+  medina: "Asia/Riyadh",
+  dammam: "Asia/Riyadh",
 };
 
 // Simple lat/lng → timezone estimation based on longitude
@@ -36,6 +41,11 @@ function estimateTimezoneFromCoords(lat: number, lng: number): string {
     { lat: 32.0, lng: 35.9, tz: "Asia/Amman" },
     { lat: 25.2, lng: 55.3, tz: "Asia/Dubai" },
     { lat: 41.0, lng: 29.0, tz: "Europe/Istanbul" },
+    { lat: 24.7, lng: 46.7, tz: "Asia/Riyadh" },
+    { lat: 21.5, lng: 39.2, tz: "Asia/Riyadh" },
+    { lat: 21.4, lng: 39.9, tz: "Asia/Riyadh" },
+    { lat: 24.5, lng: 39.6, tz: "Asia/Riyadh" },
+    { lat: 26.4, lng: 50.1, tz: "Asia/Riyadh" },
   ];
 
   for (const city of cityMap) {

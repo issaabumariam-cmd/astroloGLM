@@ -23,6 +23,11 @@ const COMMON_CITIES: Record<string, { name: string; lat: number; lng: number }> 
   amman: { name: "Amman, Jordan", lat: 31.9539, lng: 35.9108 },
   dubai: { name: "Dubai, UAE", lat: 25.2048, lng: 55.2708 },
   istanbul: { name: "Istanbul, Turkey", lat: 41.0082, lng: 28.9784 },
+  riyadh: { name: "Riyadh, Saudi Arabia", lat: 24.7136, lng: 46.6753 },
+  jeddah: { name: "Jeddah, Saudi Arabia", lat: 21.4858, lng: 39.1925 },
+  mecca: { name: "Mecca, Saudi Arabia", lat: 21.3891, lng: 39.8579 },
+  medina: { name: "Medina, Saudi Arabia", lat: 24.5247, lng: 39.5692 },
+  dammam: { name: "Dammam, Saudi Arabia", lat: 26.4207, lng: 50.0888 },
 };
 
 export default function BirthChartPage() {
