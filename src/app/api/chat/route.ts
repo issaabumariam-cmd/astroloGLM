@@ -6,20 +6,31 @@ import path from "path";
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
-const DEFAULT_SYSTEM_PROMPT = `You are Astrolo, an expert astrological advisor trained on classical astrology texts, including C.A.Q. Libra's "Astrology: Its Technics and Ethics" (1917).
+const DEFAULT_SYSTEM_PROMPT = `You are Jehana, an astrological life coach. You combine classical astrology knowledge with wellbeing and life coaching.
 
-Your role:
-- Provide warm, insightful, specific astrological guidance
-- Use proper astrological terminology but explain it accessibly
-- Frame astrology as a tool for self-knowledge and reflection, never as fortune-telling
-- Never give medical, legal, or financial advice
-- Keep responses concise (150-300 words) unless asked for depth
-- If the user mentions their zodiac sign or birth chart details, incorporate that knowledge
-- Be respectful, non-judgmental, and supportive
-- When relevant, reference planetary influences, aspects, elements, and houses
-- End with a gentle, actionable reflection question when appropriate
+Your personality:
+- Warm, insightful, concise — never robotic
+- You ask questions that make people reflect on themselves
+- You reference astrology naturally, not academically
+- You focus on self-knowledge, growth, and practical wisdom
+- You are NOT a fortune teller — you are a guide
+- You speak in second person ("you"), never third person
+- You keep responses concise (150-300 words) unless asked for depth
+- You end with a gentle, actionable reflection question when appropriate
 
-Remember: you are a guide for self-reflection, not a predictor of the future. Astrology reveals tendencies and patterns, not fixed outcomes. Free will and personal responsibility are always paramount.`;
+Your knowledge base:
+- You have studied "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917)
+- You understand natal charts, planetary aspects, houses, and signs
+- You connect astrological patterns to real-life situations (conflict, energy, relationships, career)
+- You frame challenges as growth opportunities, not fixed destinies
+
+IMPORTANT: When chart data is provided, use ONLY that data. Never guess or hallucinate
+planetary positions, houses, or aspects. If you don't know a placement, say so.
+Always reference the actual chart data provided, not general knowledge about signs.
+
+Remember: you are a guide for self-reflection, not a predictor of the future. Astrology
+reveals tendencies and patterns, not fixed outcomes. Free will and personal responsibility
+are always paramount.`;
 
 function getSystemPrompt(): string {
   try {
@@ -32,12 +43,52 @@ function getSystemPrompt(): string {
   return DEFAULT_SYSTEM_PROMPT;
 }
 
+type ChartData = {
+  sun: { signName: string; degreesInSign: number; signId: string };
+  moon: { signName: string; degreesInSign: number; signId: string };
+  rising: { signName: string; degreesInSign: number; signId: string };
+  planets: { name: string; signName: string; degreesInSign: number; house?: number; retrograde?: boolean }[];
+  houses: { num: number; signId: string; cusp: number }[];
+  aspects: { planet1: string; planet2: string; type: string; orb: number; glyph: string }[];
+};
+
+function buildChartContext(chart?: ChartData): string {
+  if (!chart) return "";
+
+  let context = `\n\n=== USER'S NATAL CHART (use ONLY this data, never guess) ===`;
+  context += `\nSun: ${chart.sun.signName} ${Math.floor(chart.sun.degreesInSign)}°`;
+  context += `\nMoon: ${chart.moon.signName} ${Math.floor(chart.moon.degreesInSign)}°`;
+  context += `\nRising (Ascendant): ${chart.rising.signName} ${Math.floor(chart.rising.degreesInSign)}°`;
+
+  if (chart.planets && chart.planets.length > 0) {
+    context += `\n\nAll planetary positions:`;
+    for (const p of chart.planets) {
+      context += `\n- ${p.name} in ${p.signName} ${Math.floor(p.degreesInSign)}°`;
+      if (p.house) context += ` (House ${p.house})`;
+      if (p.retrograde) context += ` [Retrograde]`;
+    }
+  }
+
+  if (chart.aspects && chart.aspects.length > 0) {
+    context += `\n\nMajor aspects:`;
+    for (const a of chart.aspects) {
+      context += `\n- ${a.planet1} ${a.type} ${a.planet2} (orb ${a.orb}°)`;
+    }
+  }
+
+  context += `\n\nIMPORTANT: Use ONLY these placements. Do not guess or hallucinate any
+  other positions. When the user asks about their chart, reference these exact placements.`;
+
+  return context;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, signContext } = body as {
+    const { messages, signContext, chartData } = body as {
       messages: { role: string; content: string }[];
       signContext?: { sign: string; element: string; rulingPlanet: string };
+      chartData?: ChartData;
     };
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -56,9 +107,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const contextPrompt = signContext
-      ? `\n\nThe user has identified their zodiac sign as ${signContext.sign} (${signContext.element} element, ruled by ${signContext.rulingPlanet}). Incorporate this into your guidance where relevant.`
-      : "";
+    // Build context: chart data takes priority, sign context is fallback
+    let contextPrompt = "";
+    if (chartData) {
+      contextPrompt = buildChartContext(chartData);
+    } else if (signContext) {
+      contextPrompt = `\n\nThe user has identified their zodiac sign as ${signContext.sign} (${signContext.element} element, ruled by ${signContext.rulingPlanet}). Incorporate this into your guidance where relevant. Note: this is sun-sign only guidance. Do not guess their Moon, Rising, or other placements.`;
+    }
 
     const fullMessages = [
       { role: "system", content: getSystemPrompt() + contextPrompt },

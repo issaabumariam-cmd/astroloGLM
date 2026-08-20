@@ -69,6 +69,7 @@ export default function AdvisorPage() {
   const [exchangeCount, setExchangeCount] = useState(0);
   const [isPersonalized, setIsPersonalized] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [chartData, setChartData] = useState<unknown>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,7 +99,27 @@ export default function AdvisorPage() {
 
     try {
       const city = COMMON_CITIES[cityKey] || COMMON_CITIES.london;
-      const response = await fetch("/api/echo", {
+
+      // Fetch the actual natal chart
+      const chartResponse = await fetch("/api/birth-chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birthDate,
+          birthTime: birthTime || undefined,
+          lat: city.lat,
+          lng: city.lng,
+          birthPlace: city.name,
+          cityKey,
+        }),
+      });
+
+      if (!chartResponse.ok) throw new Error("Failed");
+      const chart = await chartResponse.json();
+      setChartData(chart);
+
+      // Now fetch the Jehana intro
+      const echoResponse = await fetch("/api/echo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,8 +132,8 @@ export default function AdvisorPage() {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed");
-      const data = await response.json();
+      if (!echoResponse.ok) throw new Error("Failed");
+      const data = await echoResponse.json();
 
       const sign = getSignById(data.chart.sun.sign.toLowerCase());
       setSelectedSign(sign?.id || "aries");
@@ -170,7 +191,8 @@ export default function AdvisorPage() {
           messages: newMessages
             .filter((m) => !m.isHook)
             .map((m) => ({ role: m.role, content: m.content })),
-          signContext: sign
+          chartData: chartData || undefined,
+          signContext: !chartData && sign
             ? { sign: sign.name, element: sign.element, rulingPlanet: sign.rulingPlanet }
             : undefined,
         }),
