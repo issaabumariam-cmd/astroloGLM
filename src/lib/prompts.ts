@@ -31,13 +31,13 @@ export const PROMPT_META: PromptMeta[] = [
   },
   {
     key: "chatAdvisor",
-    label: "Chat Advisor (Free Tier)",
+    label: "Jehana Echo Chat",
     description: "Task instructions for the free conversational chat advisor (Quick Chat + Personalized 3 free). Shorter responses, general guidance. Variables: {chartContext}, {signContext}, {ragContext}.",
     usedBy: "/api/chat (tier=free) — Quick Chat and Personalized (3 free) on /advisor",
   },
   {
     key: "premiumAdvisor",
-    label: "Premium Advisor (In-Depth Natal Chart)",
+    label: "Jehana Deep Echo Chat",
     description: "Task instructions for PREMIUM subscribers only. Full in-depth natal chart conversation — deep psychological analysis, house-by-house breakdown, aspect interpretation, transit timing. Longer responses, book references, life-coaching depth. Variables: {chartContext}, {ragContext}.",
     usedBy: "/api/chat (tier=premium) — Premium unlimited chat on /advisor",
   },
