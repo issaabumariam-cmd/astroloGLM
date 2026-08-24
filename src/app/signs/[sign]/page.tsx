@@ -9,6 +9,7 @@ import { generateSignReading } from "@/lib/astrology/sign-reading";
 import { BookOpen } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export function generateStaticParams() {
   return zodiacSigns.map((sign) => ({ sign: sign.id }));
