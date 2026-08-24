@@ -313,7 +313,7 @@ export function getPrompt(key: PromptKey): string {
 export function buildPrompt(key: PromptKey, ...sections: string[]): string {
   const config = loadPrompts();
   const persona = config.jehanaPersona;
-  let task = config[key];
+  const task = config[key];
   const parts = [persona, ...sections];
 
   // Interpolate template variables in the task section

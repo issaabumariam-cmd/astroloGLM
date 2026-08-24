@@ -63,7 +63,7 @@ function calcAscendant(lng: number, lat: number, date: Date): number {
     Math.cos(ramcRad),
     -(Math.sin(ramcRad) * Math.cos(oblRad) + Math.tan(latRad) * Math.sin(oblRad))
   );
-  let ascDeg = (ascRad * 180 / Math.PI + 360) % 360;
+  const ascDeg = (ascRad * 180 / Math.PI + 360) % 360;
 
   return ascDeg;
 }
