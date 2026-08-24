@@ -7,6 +7,8 @@ import { ollamaHeaders } from "@/lib/ollama/headers";
 import fs from "fs";
 import path from "path";
 
+export const maxDuration = 60;
+
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 const CACHE_DIR = path.join(process.cwd(), "data", "compatibility_cache");

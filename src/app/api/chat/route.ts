@@ -3,6 +3,8 @@ import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "@
 import { getPrompt } from "@/lib/prompts";
 import { ollamaHeaders } from "@/lib/ollama/headers";
 
+export const maxDuration = 60;
+
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
