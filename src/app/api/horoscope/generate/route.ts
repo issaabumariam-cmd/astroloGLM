@@ -5,6 +5,7 @@ import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "@
 import { zodiacSigns, getSignById } from "@/lib/astrology/signs";
 import { getCachedHoroscope, saveCachedHoroscope, getLuckyNumber } from "@/lib/horoscope-cache";
 import { buildPrompt, getPrompt } from "@/lib/prompts";
+import { ollamaHeaders } from "@/lib/ollama/headers";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
@@ -151,7 +152,7 @@ Do NOT use headers or bullet points. Write as flowing prose. Do NOT start with "
     // Generate with LLM
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: ollamaHeaders(),
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,
