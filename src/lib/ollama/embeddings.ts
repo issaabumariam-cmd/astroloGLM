@@ -1,3 +1,5 @@
+import { ollamaHeaders } from "./headers";
+
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text";
 
@@ -5,7 +7,7 @@ export async function embedText(text: string): Promise<number[] | null> {
   try {
     const response = await fetch(`${OLLAMA_URL}/api/embeddings`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: ollamaHeaders(),
       body: JSON.stringify({ model: EMBED_MODEL, prompt: text }),
     });
 

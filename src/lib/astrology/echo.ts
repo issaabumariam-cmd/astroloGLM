@@ -4,6 +4,7 @@
 import type { ChartData, PlanetPosition } from "./chart";
 import { retrieveRelevantChunks } from "../ollama/rag";
 import { buildPrompt } from "../prompts";
+import { ollamaHeaders } from "../ollama/headers";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
@@ -73,7 +74,7 @@ ${chart.aspects.filter((a) => a.type === "trine").slice(0, 3).map((a) => `- ${a.
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: ollamaHeaders(),
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,
@@ -151,7 +152,7 @@ Keep it under 200 words. Tone: wise friend who happens to know astrology. Do NOT
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: ollamaHeaders(),
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,

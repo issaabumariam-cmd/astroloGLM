@@ -1,6 +1,7 @@
 import type { ZodiacSign } from "./signs";
 import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "../ollama/rag";
 import { buildPrompt, getPrompt } from "../prompts";
+import { ollamaHeaders } from "../ollama/headers";
 import fs from "fs";
 import path from "path";
 
@@ -60,7 +61,7 @@ Tone: wise, warm, specific. Never say "according to the book." Never introduce y
 
   const response = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: ollamaHeaders(),
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       stream: false,

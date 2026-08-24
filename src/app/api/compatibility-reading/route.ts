@@ -3,6 +3,7 @@ import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
 import { calculateCompatibility } from "@/lib/astrology/compatibility";
 import { buildPrompt, getPrompt } from "@/lib/prompts";
+import { ollamaHeaders } from "@/lib/ollama/headers";
 import fs from "fs";
 import path from "path";
 
@@ -73,7 +74,7 @@ Elemental dynamic: ${compat.elementMatch}`;
 
     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: ollamaHeaders(),
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         stream: false,
