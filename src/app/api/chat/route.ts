@@ -116,6 +116,8 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama chat request failed: ${response.status} ${response.statusText} — ${errorBody}`);
       return NextResponse.json(
         { error: "AI service unavailable. Please try again." },
         { status: 503 }
