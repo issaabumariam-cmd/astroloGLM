@@ -15,10 +15,19 @@ type Source = {
   score?: number;
 };
 
+type RagMeta = {
+  method: string;
+  topScore: number | null;
+  queryDims: number | null;
+  bookChunks: number;
+  embeddedChunks: number;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
+  rag?: RagMeta;
   isHook?: boolean;
   hookId?: string;
 };
@@ -229,6 +238,7 @@ export default function AdvisorPage() {
       const decoder = new TextDecoder();
       const contentRef = { current: "" };
       const sourcesRef: Source[] = [];
+      const ragRef: { current: RagMeta | undefined } = { current: undefined };
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (true) {
@@ -242,6 +252,9 @@ export default function AdvisorPage() {
             if (data === "[DONE]") break;
             try {
               const parsed = JSON.parse(data);
+              if (parsed.rag) {
+                ragRef.current = parsed.rag;
+              }
               if (parsed.sources) {
                 sourcesRef.push(...parsed.sources);
               }
@@ -249,12 +262,14 @@ export default function AdvisorPage() {
                 contentRef.current = contentRef.current + parsed.content;
                 const newContent = contentRef.current;
                 const currentSources = sourcesRef.length > 0 ? [...sourcesRef] : undefined;
+                const currentRag = ragRef.current;
                 setMessages((prev) => {
                   const updated = [...prev];
                   updated[updated.length - 1] = {
                     role: "assistant",
                     content: newContent,
                     sources: currentSources,
+                    rag: currentRag,
                   };
                   return [...updated];
                 });
@@ -475,8 +490,8 @@ export default function AdvisorPage() {
                   <div className={cn("rounded-lg px-4 py-3 text-sm leading-relaxed", msg.role === "user" ? "bg-primary text-surface" : "bg-surface-muted text-foreground")}>
                     {msg.content || (streaming ? "..." : "")}
                   </div>
-                  {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && msg.content && (
-                    <SourcesPanel sources={msg.sources} />
+                  {msg.role === "assistant" && msg.content && (msg.sources && msg.sources.length > 0 || msg.rag) && (
+                    <SourcesPanel sources={msg.sources || []} rag={msg.rag} />
                   )}
                 </div>
               </div>
@@ -568,8 +583,12 @@ export default function AdvisorPage() {
   );
 }
 
-function SourcesPanel({ sources }: { sources: Source[] }) {
+function SourcesPanel({ sources, rag }: { sources: Source[]; rag?: RagMeta }) {
   const [open, setOpen] = useState(false);
+
+  const methodLabel = rag?.method === "vector" ? "Semantic search" : rag?.method === "keyword" ? "Keyword match" : "No search";
+  const methodColor = rag?.method === "vector" ? "text-success" : rag?.method === "keyword" ? "text-warning" : "text-foreground-subtle";
+  const topScorePct = rag?.topScore !== null && rag?.topScore !== undefined ? `${(rag.topScore * 100).toFixed(0)}% match` : null;
 
   return (
     <div className="mt-2 rounded-lg border border-border bg-surface/50">
@@ -580,12 +599,36 @@ function SourcesPanel({ sources }: { sources: Source[] }) {
         <span className="flex items-center gap-1.5">
           <BookOpen className="h-3.5 w-3.5 text-primary" />
           <span className="font-medium">Sourced from the book</span>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{sources.length} passages</span>
+          {sources.length > 0 && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">{sources.length} passages</span>
+          )}
         </span>
         {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
       </button>
       {open && (
         <div className="space-y-2 px-3 pb-3">
+          {rag && (
+            <div className="flex flex-wrap gap-2 rounded-md bg-surface-muted/40 px-2 py-1.5 text-[10px]">
+              <span className={`font-medium ${methodColor}`}>
+                {methodLabel}
+              </span>
+              {topScorePct && (
+                <span className="text-foreground-muted">
+                  · Top: <span className="font-medium text-foreground">{topScorePct}</span>
+                </span>
+              )}
+              {rag.queryDims && (
+                <span className="text-foreground-muted">
+                  · {rag.queryDims}-dim vectors
+                </span>
+              )}
+              {rag.bookChunks > 0 && (
+                <span className="text-foreground-muted">
+                  · {rag.bookChunks} passages searched
+                </span>
+              )}
+            </div>
+          )}
           {sources.map((source, i) => (
             <div key={i} className="rounded-md bg-surface-muted/60 p-3">
               <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-primary">
@@ -595,10 +638,17 @@ function SourcesPanel({ sources }: { sources: Source[] }) {
               <p className="text-xs leading-relaxed text-foreground-muted line-clamp-4">&ldquo;{source.text}&rdquo;</p>
             </div>
           ))}
-          <p className="pt-1 text-[10px] text-foreground-subtle">
-            From &ldquo;Astrology: Its Technics and Ethics&rdquo; by C.A.Q. Libra (1917).
-            Retrieved via semantic search over {1445} embedded passages.
-          </p>
+          {sources.length === 0 && rag && (
+            <p className="text-xs text-foreground-muted italic py-2">
+              No book passages were retrieved for this query. The AI responded from its general training data.
+            </p>
+          )}
+          {sources.length > 0 && (
+            <p className="pt-1 text-[10px] text-foreground-subtle">
+              From &ldquo;Astrology: Its Technics and Ethics&rdquo; by C.A.Q. Libra (1917).
+              Retrieved via {methodLabel.toLowerCase()} over {rag?.embeddedChunks || 1444} embedded passages.
+            </p>
+          )}
         </div>
       )}
     </div>
