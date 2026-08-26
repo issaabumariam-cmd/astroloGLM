@@ -82,7 +82,13 @@ export async function POST(request: NextRequest) {
 
     if (hasBookData()) {
       const chunks = await retrieveRelevantChunks(ragQuery, 4);
-      sources = chunks;
+      sources = chunks.map((c) => ({
+        chapter_num: c.chapter_num,
+        chapter_title: c.chapter_title,
+        chunk_index: c.chunk_index,
+        text: c.text,
+        score: c.score,
+      }));
       if (chunks.length > 0) {
         const ragContext = augmentPromptWithContext("", chunks);
         const excerptsMatch = ragContext.match(/RELEVANT EXCERPTS:\n([\s\S]*?)\n\nUSER QUESTION:/);
