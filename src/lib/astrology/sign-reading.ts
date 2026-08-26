@@ -1,5 +1,5 @@
 import type { ZodiacSign } from "./signs";
-import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "../ollama/rag";
+import { retrieveRelevantChunks, hasBookData } from "../ollama/rag";
 import { buildPrompt, getPrompt } from "../prompts";
 import { ollamaHeaders } from "../ollama/headers";
 import fs from "fs";
@@ -73,7 +73,11 @@ Tone: wise, warm, specific. Never say "according to the book." Never introduce y
     }),
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    console.error(`Ollama sign-reading failed: ${response.status} ${response.statusText} — ${errorBody}`);
+    return null;
+  }
 
   const data = await response.json();
   const interpretation = data.message?.content?.trim();

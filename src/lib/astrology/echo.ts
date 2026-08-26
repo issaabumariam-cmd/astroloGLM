@@ -1,7 +1,7 @@
 // Jehana hook question generator — analyzes natal chart and generates
 // personalized life-coaching questions grounded in the book's knowledge
 
-import type { ChartData, PlanetPosition } from "./chart";
+import type { ChartData } from "./chart";
 import { retrieveRelevantChunks } from "../ollama/rag";
 import { buildPrompt } from "../prompts";
 import { ollamaHeaders } from "../ollama/headers";
@@ -84,7 +84,11 @@ ${chart.aspects.filter((a) => a.type === "trine").slice(0, 3).map((a) => `- ${a.
       }),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama echo intro failed: ${response.status} ${response.statusText} — ${errorBody}`);
+      return null;
+    }
 
     const data = await response.json();
     const content = data.message?.content?.trim();
@@ -161,7 +165,11 @@ Keep it under 200 words. Tone: wise friend who happens to know astrology. Do NOT
       }),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama hook response failed: ${response.status} ${response.statusText} — ${errorBody}`);
+      return null;
+    }
 
     const data = await response.json();
     return data.message?.content?.trim() || null;

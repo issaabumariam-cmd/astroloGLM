@@ -170,6 +170,8 @@ Do NOT use headers or bullet points. Write as flowing prose. Do NOT start with "
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama horoscope/generate failed: ${response.status} ${response.statusText} — ${errorBody}`);
       return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
     }
 

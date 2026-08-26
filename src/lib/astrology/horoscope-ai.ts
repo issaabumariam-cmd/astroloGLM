@@ -1,4 +1,4 @@
-import { getSignById, type ZodiacSign } from "./signs";
+import { type ZodiacSign } from "./signs";
 import { getTransitPositions } from "./transit-natal";
 import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "../ollama/rag";
 import { buildPrompt, getPrompt } from "../prompts";
@@ -105,7 +105,11 @@ Do NOT use headers or bullet points. Write as flowing prose. Do NOT start with "
     }),
   });
 
-  if (!response.ok) throw new Error("AI service unavailable");
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    console.error(`Ollama horoscope-ai failed: ${response.status} ${response.statusText} — ${errorBody}`);
+    throw new Error("AI service unavailable");
+  }
 
   const data = await response.json();
   const content = data.message?.content?.trim();

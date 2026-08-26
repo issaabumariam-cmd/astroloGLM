@@ -124,6 +124,8 @@ Tone: wise, warm, specific. Not generic "you are a Leo." Reference the specific 
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama birth-chart-interpretation failed: ${response.status} ${response.statusText} — ${errorBody}`);
       return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
     }
 

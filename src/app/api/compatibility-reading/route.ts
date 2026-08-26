@@ -89,6 +89,8 @@ Elemental dynamic: ${compat.elementMatch}`;
     });
 
     if (!response.ok) {
+      const errorBody = await response.text().catch(() => "");
+      console.error(`Ollama compatibility-reading failed: ${response.status} ${response.statusText} — ${errorBody}`);
       return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
     }
 
