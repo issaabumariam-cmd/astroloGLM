@@ -5,7 +5,7 @@ import { zodiacSigns, elementColors } from "@/lib/astrology/signs";
 import { calculateCompatibility, type CompatibilityResult } from "@/lib/astrology/compatibility";
 import { Eyebrow, Card, ScoreBar, OrnateDivider } from "@/components/shared/ui-primitives";
 import { ShareButton } from "@/components/shared/share-button";
-import { Sparkles, Heart, Users, Repeat, Loader2, BookOpen, Lock } from "lucide-react";
+import { Sparkles, Heart, Users, Repeat, Loader2, BookOpen } from "lucide-react";
 
 export default function CompatibilityPage() {
   const [sign1, setSign1] = useState<string>("aries");

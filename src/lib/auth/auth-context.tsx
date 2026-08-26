@@ -26,11 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== "your-supabase-url" &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith("http");
-
   useEffect(() => {
+    const isConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL !== "your-supabase-url" &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith("http");
+
     if (!isConfigured) {
       const timer = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(timer);

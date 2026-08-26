@@ -5,13 +5,12 @@ import { getTimezoneForCoords, localToUTC } from "@/lib/astrology/timezone";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { birthDate, birthTime, lat, lng, birthPlace, cityKey } = body as {
+    const { birthDate, birthTime, lat, lng, birthPlace } = body as {
       birthDate: string;
       birthTime?: string;
       lat?: number;
       lng?: number;
       birthPlace?: string;
-      cityKey?: string;
     };
 
     if (!birthDate) {

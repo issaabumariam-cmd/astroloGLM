@@ -47,7 +47,6 @@ export default function BirthChartPage() {
     setAiLoading(true);
     setAiInterpretation(null);
     try {
-      const city = COMMON_CITIES[cityKey] || COMMON_CITIES.london;
       const response = await fetch("/api/birth-chart-interpretation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

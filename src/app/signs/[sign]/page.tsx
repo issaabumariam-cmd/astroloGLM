@@ -4,7 +4,6 @@ import { ArrowLeft, Check, AlertCircle, Heart, Briefcase, Star, Sparkles } from 
 import { zodiacSigns, getSignById, elementColors, elementDescriptions } from "@/lib/astrology/signs";
 import { planets } from "@/lib/astrology/planets";
 import { Eyebrow, Card, OrnateDivider, Tag } from "@/components/shared/ui-primitives";
-import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { generateSignReading } from "@/lib/astrology/sign-reading";
 import { BookOpen } from "lucide-react";
 
