@@ -296,14 +296,18 @@ export function loadPrompts(): PromptConfig {
 }
 
 export function savePrompts(config: Partial<PromptConfig>): void {
-  const dataDir = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  try {
+    const dataDir = path.join(process.cwd(), "data");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-  const current = loadPrompts();
-  const merged = { ...current, ...config };
-  fs.writeFileSync(PROMPTS_FILE, JSON.stringify(merged, null, 2), "utf-8");
-  cachedConfig = merged;
-  cachedMtime = fs.statSync(PROMPTS_FILE).mtimeMs;
+    const current = loadPrompts();
+    const merged = { ...current, ...config };
+    fs.writeFileSync(PROMPTS_FILE, JSON.stringify(merged, null, 2), "utf-8");
+    cachedConfig = merged;
+    cachedMtime = fs.statSync(PROMPTS_FILE).mtimeMs;
+  } catch {
+    // Save failed (read-only filesystem on Vercel) — non-fatal
+  }
 }
 
 export function getPrompt(key: PromptKey): string {

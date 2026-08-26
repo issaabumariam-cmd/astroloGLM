@@ -22,8 +22,12 @@ type CachedHoroscope = {
 };
 
 function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
+  } catch {
+    // Cache dir creation failed (read-only filesystem on Vercel) — non-fatal
   }
 }
 
@@ -68,7 +72,11 @@ export function saveCachedHoroscope(
     createdAt: new Date().toISOString(),
   };
 
-  fs.writeFileSync(filePath, JSON.stringify(cached, null, 2), "utf-8");
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(cached, null, 2), "utf-8");
+  } catch {
+    // Cache write failed (read-only filesystem on Vercel) — non-fatal
+  }
 }
 
 // Deterministic lucky number from sign + date (same every time for same sign+date)

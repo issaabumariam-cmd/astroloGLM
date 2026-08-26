@@ -93,8 +93,12 @@ Tone: wise, warm, specific. Never say "according to the book." Never introduce y
     cached: false,
   };
 
-  if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
-  fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2), "utf-8");
+  try {
+    if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2), "utf-8");
+  } catch {
+    // Cache write failed (read-only filesystem on Vercel) — non-fatal
+  }
 
   return result;
 }

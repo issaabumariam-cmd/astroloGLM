@@ -110,9 +110,13 @@ Elemental dynamic: ${compat.elementMatch}`;
       cached: false,
     };
 
-    // Save to cache
-    if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
-    fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2), "utf-8");
+    // Save to cache (non-fatal — Vercel filesystem is read-only)
+    try {
+      if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+      fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2), "utf-8");
+    } catch {
+      // Cache write failed (read-only filesystem on Vercel) — non-fatal
+    }
 
     return NextResponse.json(result);
   } catch (error) {
