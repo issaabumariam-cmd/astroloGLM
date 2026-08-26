@@ -82,7 +82,13 @@ export async function POST(request: NextRequest) {
         embeddedChunks: retrieval.embeddedChunksTotal,
       };
       if (retrieval.chunks.length > 0) {
-        sources = retrieval.chunks;
+        sources = retrieval.chunks.map((c) => ({
+          chapter_num: c.chapter_num,
+          chapter_title: c.chapter_title,
+          chunk_index: c.chunk_index,
+          text: c.text,
+          score: c.score,
+        }));
         ragContext = augmentPromptWithContext(lastUserMessage.content, retrieval.chunks);
       }
     }
