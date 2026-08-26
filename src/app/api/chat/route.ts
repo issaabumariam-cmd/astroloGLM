@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     let ragMeta: { method: string; topScore: number | null; queryDims: number | null; bookChunks: number; embeddedChunks: number } | null = null;
 
     if (lastUserMessage && hasBookData()) {
-      const retrieval = await retrieveRelevantChunksDetailed(lastUserMessage.content, 3);
+      const retrieval = await retrieveRelevantChunksDetailed(lastUserMessage.content, 6);
       ragMeta = {
         method: retrieval.method,
         topScore: retrieval.topScore,

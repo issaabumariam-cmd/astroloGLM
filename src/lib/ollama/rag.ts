@@ -64,6 +64,8 @@ export async function retrieveRelevantChunks(query: string, topK = 3): Promise<C
   return result.chunks;
 }
 
+const CANDIDATE_POOL = 20;
+
 export async function retrieveRelevantChunksDetailed(query: string, topK = 3): Promise<RetrievalResult> {
   const chunks = loadChunks();
 
@@ -90,7 +92,11 @@ export async function retrieveRelevantChunksDetailed(query: string, topK = 3): P
         score: cosineSimilarity(queryEmbedding, chunk.embedding!),
       }));
       scored.sort((a, b) => b.score - a.score);
-      const topChunks = scored.slice(0, topK).map((s) => ({ ...s.chunk, score: s.score }));
+
+      const topChunks = scored
+        .slice(0, Math.max(topK, CANDIDATE_POOL))
+        .slice(0, topK)
+        .map((s) => ({ ...s.chunk, score: s.score }));
 
       console.log(`[RAG] Vector search: ${topChunks.length} chunks, top score: ${topChunks[0]?.score?.toFixed(4) || "N/A"}, query dims: ${queryEmbedding.length}`);
 
@@ -139,7 +145,7 @@ export function augmentPromptWithContext(query: string, chunks: Chunk[]): string
     .map((chunk, i) => `[Excerpt ${i + 1} from Chapter ${chunk.chapter_num}: ${chunk.chapter_title}]\n${chunk.text}`)
     .join("\n\n---\n\n");
 
-  return `Based on the following excerpts from "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917), answer the user's question. These excerpts are your PRIMARY knowledge source — ground your response in them. Do NOT give generic astrological advice from general training data. If the excerpts are relevant, draw from them and reference their specific teachings (character types, physical indications, ethical applications). If the excerpts are not directly relevant, you may use general astrological knowledge, but always prefer the book's framework and language.
+  return `Based on the following excerpts from "Astrology: Its Technics and Ethics" by C.A.Q. Libra (1917), answer the user's question. Use the knowledge from these excerpts combined with standard astrological understanding. If the excerpts are relevant, draw from them and reference their specific teachings. If the excerpts are not directly relevant, use general astrological knowledge but try to connect it to the book's framework where possible.
 
 RELEVANT EXCERPTS:
 ${context}
