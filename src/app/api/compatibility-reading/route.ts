@@ -3,13 +3,12 @@ import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
 import { calculateCompatibility } from "@/lib/astrology/compatibility";
 import { buildPrompt, getPrompt } from "@/lib/prompts";
-import { ollamaHeaders } from "@/lib/ollama/headers";
+import { gatewayFetch } from "@/lib/ollama/gateway-fetch";
 import fs from "fs";
 import path from "path";
 
 export const maxDuration = 60;
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 const CACHE_DIR = path.join(process.cwd(), "data", "compatibility_cache");
 
@@ -74,10 +73,9 @@ Elemental dynamic: ${compat.elementMatch}`;
       } catch {}
     }
 
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({
+    const response = await gatewayFetch({
+      path: "/api/chat",
+      body: {
         model: OLLAMA_MODEL,
         stream: false,
         messages: [
@@ -85,7 +83,7 @@ Elemental dynamic: ${compat.elementMatch}`;
           { role: "user", content: prompt },
         ],
         options: { temperature: 0.75, top_p: 0.9, seed: 42 },
-      }),
+      },
     });
 
     if (!response.ok) {

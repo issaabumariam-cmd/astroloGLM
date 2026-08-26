@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
 import { getPrompt } from "@/lib/prompts";
-import { ollamaHeaders } from "@/lib/ollama/headers";
+import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError } from "@/lib/ollama/gateway-fetch";
 
 export const maxDuration = 60;
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
 function getSystemPrompt(tier?: string): string {
@@ -103,10 +102,9 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
       }),
     ];
 
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({
+    const response = await gatewayFetch({
+      path: "/api/chat",
+      body: {
         model: OLLAMA_MODEL,
         messages: fullMessages,
         stream: true,
@@ -114,7 +112,7 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
           temperature: 0.8,
           top_p: 0.9,
         },
-      }),
+      },
     });
 
     if (!response.ok) {
@@ -174,6 +172,15 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
       },
     });
   } catch (error) {
+    if (error instanceof GatewayRateLimitError) {
+      return NextResponse.json({ error: "The cosmos is busy right now. Please wait a moment and try again." }, { status: 429 });
+    }
+    if (error instanceof GatewayPayloadTooLargeError) {
+      return NextResponse.json({ error: "Your message is too long. Please shorten it and try again." }, { status: 413 });
+    }
+    if (error instanceof GatewayTimeoutError) {
+      return NextResponse.json({ error: "The cosmos is taking too long to respond. Please try again." }, { status: 504 });
+    }
     console.error("Chat API error:", error);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },

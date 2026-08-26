@@ -3,9 +3,8 @@ import { getTransitPositions } from "./transit-natal";
 import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "../ollama/rag";
 import { buildPrompt, getPrompt } from "../prompts";
 import { getCachedHoroscope, saveCachedHoroscope, getLuckyNumber } from "../horoscope-cache";
-import { ollamaHeaders } from "../ollama/headers";
+import { gatewayFetch } from "../ollama/gateway-fetch";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
 export type AIHoroscope = {
@@ -91,10 +90,9 @@ Do NOT use headers or bullet points. Write as flowing prose. Do NOT start with "
 
   const prompt = buildPrompt("horoscopeGeneration", horoscopeContext, bookSection, taskOverride);
 
-  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: "POST",
-    headers: ollamaHeaders(),
-    body: JSON.stringify({
+  const response = await gatewayFetch({
+    path: "/api/chat",
+    body: {
       model: OLLAMA_MODEL,
       stream: false,
       messages: [
@@ -102,7 +100,7 @@ Do NOT use headers or bullet points. Write as flowing prose. Do NOT start with "
         { role: "user", content: prompt },
       ],
       options: { temperature: 0.7, top_p: 0.9, seed: 42 },
-    }),
+    },
   });
 
   if (!response.ok) {

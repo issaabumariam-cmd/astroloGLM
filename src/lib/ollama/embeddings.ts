@@ -1,14 +1,12 @@
-import { ollamaHeaders } from "./headers";
+import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError } from "./gateway-fetch";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text";
 
 export async function embedText(text: string): Promise<number[] | null> {
   try {
-    const response = await fetch(`${OLLAMA_URL}/api/embeddings`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({ model: EMBED_MODEL, prompt: text }),
+    const response = await gatewayFetch({
+      path: "/api/embeddings",
+      body: { model: EMBED_MODEL, prompt: text },
     });
 
     if (!response.ok) return null;
@@ -16,7 +14,11 @@ export async function embedText(text: string): Promise<number[] | null> {
     const data = await response.json();
     return data.embedding || null;
   } catch (error) {
-    console.error("Embedding error:", error);
+    if (error instanceof GatewayRateLimitError || error instanceof GatewayPayloadTooLargeError || error instanceof GatewayTimeoutError) {
+      console.error(`Embedding gateway error: ${error.message}`);
+    } else {
+      console.error("Embedding error:", error);
+    }
     return null;
   }
 }
@@ -26,7 +28,7 @@ export async function embedChunks(chunks: string[]): Promise<number[][]> {
   for (const chunk of chunks) {
     const embedding = await embedText(chunk);
     if (embedding) embeddings.push(embedding);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
   return embeddings;
 }

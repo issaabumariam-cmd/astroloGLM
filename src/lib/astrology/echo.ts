@@ -4,9 +4,8 @@
 import type { ChartData } from "./chart";
 import { retrieveRelevantChunks } from "../ollama/rag";
 import { buildPrompt } from "../prompts";
-import { ollamaHeaders } from "../ollama/headers";
+import { gatewayFetch } from "../ollama/gateway-fetch";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
 export type HookQuestion = {
@@ -72,16 +71,15 @@ ${chart.aspects.filter((a) => a.type === "trine").slice(0, 3).map((a) => `- ${a.
       bookSection
     );
 
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({
+    const response = await gatewayFetch({
+      path: "/api/chat",
+      body: {
         model: OLLAMA_MODEL,
         stream: false,
         messages: [{ role: "user", content: prompt }],
         options: { temperature: 0.7, top_p: 0.9, seed: 42 },
         format: "json",
-      }),
+      },
     });
 
     if (!response.ok) {
@@ -154,15 +152,14 @@ Respond as Jehana:
 
 Keep it under 200 words. Tone: wise friend who happens to know astrology. Do NOT say "according to the book" — just weave the wisdom naturally.`;
 
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({
+    const response = await gatewayFetch({
+      path: "/api/chat",
+      body: {
         model: OLLAMA_MODEL,
         stream: false,
         messages: [{ role: "user", content: prompt }],
         options: { temperature: 0.75, top_p: 0.9 },
-      }),
+      },
     });
 
     if (!response.ok) {

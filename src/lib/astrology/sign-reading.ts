@@ -1,11 +1,10 @@
 import type { ZodiacSign } from "./signs";
 import { retrieveRelevantChunks, hasBookData } from "../ollama/rag";
 import { buildPrompt, getPrompt } from "../prompts";
-import { ollamaHeaders } from "../ollama/headers";
+import { gatewayFetch } from "../ollama/gateway-fetch";
 import fs from "fs";
 import path from "path";
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
 const CACHE_DIR = path.join(process.cwd(), "data", "sign_readings_cache");
@@ -59,10 +58,9 @@ Tone: wise, warm, specific. Never say "according to the book." Never introduce y
 
   const prompt = buildPrompt("birthChartInterpretation", signSection, bookSection, taskOverride);
 
-  const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-    method: "POST",
-    headers: ollamaHeaders(),
-    body: JSON.stringify({
+  const response = await gatewayFetch({
+    path: "/api/chat",
+    body: {
       model: OLLAMA_MODEL,
       stream: false,
       messages: [
@@ -70,7 +68,7 @@ Tone: wise, warm, specific. Never say "according to the book." Never introduce y
         { role: "user", content: prompt },
       ],
       options: { temperature: 0.7, top_p: 0.9, seed: 42 },
-    }),
+    },
   });
 
   if (!response.ok) {

@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunks } from "@/lib/ollama/rag";
 import { getSignById } from "@/lib/astrology/signs";
 import { buildPrompt } from "@/lib/prompts";
-import { ollamaHeaders } from "@/lib/ollama/headers";
+import { gatewayFetch } from "@/lib/ollama/gateway-fetch";
 
 export const maxDuration = 60;
 
-const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "gemma4:31b-cloud";
 
 type FullChart = {
@@ -112,15 +111,14 @@ Tone: wise, warm, specific. Not generic "you are a Leo." Reference the specific 
       taskOverride || ""
     );
 
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: ollamaHeaders(),
-      body: JSON.stringify({
+    const response = await gatewayFetch({
+      path: "/api/chat",
+      body: {
         model: OLLAMA_MODEL,
         stream: false,
         messages: [{ role: "user", content: prompt }],
         options: { temperature: 0.75, top_p: 0.9, seed: 42 },
-      }),
+      },
     });
 
     if (!response.ok) {
