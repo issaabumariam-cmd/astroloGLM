@@ -5,13 +5,22 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const EMBEDDED_FILE = path.join(DATA_DIR, "book_chunks_embedded.json");
 const CHUNKS_FILE = path.join(DATA_DIR, "book_chunks.json");
 
-type Chunk = {
+export type Chunk = {
   chapter_num: number;
   chapter_title: string;
   chunk_index: number;
   text: string;
   embedding?: number[];
   score?: number;
+};
+
+export type RetrievalResult = {
+  chunks: Chunk[];
+  method: "vector" | "keyword" | "none";
+  queryEmbeddingDims: number | null;
+  topScore: number | null;
+  bookChunksTotal: number;
+  embeddedChunksTotal: number;
 };
 
 let cachedChunks: Chunk[] | null = null;
@@ -51,26 +60,57 @@ function simpleSimilarity(query: string, text: string): number {
 }
 
 export async function retrieveRelevantChunks(query: string, topK = 3): Promise<Chunk[]> {
+  const result = await retrieveRelevantChunksDetailed(query, topK);
+  return result.chunks;
+}
+
+export async function retrieveRelevantChunksDetailed(query: string, topK = 3): Promise<RetrievalResult> {
   const chunks = loadChunks();
-  if (chunks.length === 0) return [];
+
+  if (chunks.length === 0) {
+    return {
+      chunks: [],
+      method: "none",
+      queryEmbeddingDims: null,
+      topScore: null,
+      bookChunksTotal: 0,
+      embeddedChunksTotal: 0,
+    };
+  }
+
+  const chunksWithEmbeddings = chunks.filter((c) => c.embedding && c.embedding.length > 0);
 
   try {
     const { embedText, cosineSimilarity } = await import("./embeddings");
     const queryEmbedding = await embedText(query);
 
-    if (queryEmbedding) {
-      const chunksWithEmbeddings = chunks.filter((c) => c.embedding);
-      if (chunksWithEmbeddings.length > 0) {
-        const scored = chunksWithEmbeddings.map((chunk) => ({
-          chunk,
-          score: cosineSimilarity(queryEmbedding, chunk.embedding!),
-        }));
-        scored.sort((a, b) => b.score - a.score);
-        return scored.slice(0, topK).map((s) => ({ ...s.chunk, score: s.score }));
-      }
+    if (queryEmbedding && chunksWithEmbeddings.length > 0) {
+      const scored = chunksWithEmbeddings.map((chunk) => ({
+        chunk,
+        score: cosineSimilarity(queryEmbedding, chunk.embedding!),
+      }));
+      scored.sort((a, b) => b.score - a.score);
+      const topChunks = scored.slice(0, topK).map((s) => ({ ...s.chunk, score: s.score }));
+
+      console.log(`[RAG] Vector search: ${topChunks.length} chunks, top score: ${topChunks[0]?.score?.toFixed(4) || "N/A"}, query dims: ${queryEmbedding.length}`);
+
+      return {
+        chunks: topChunks,
+        method: "vector",
+        queryEmbeddingDims: queryEmbedding.length,
+        topScore: topChunks[0]?.score ?? null,
+        bookChunksTotal: chunks.length,
+        embeddedChunksTotal: chunksWithEmbeddings.length,
+      };
+    }
+
+    if (!queryEmbedding) {
+      console.warn("[RAG] Query embedding failed (null) — falling back to keyword search");
+    } else if (chunksWithEmbeddings.length === 0) {
+      console.warn("[RAG] No embedded chunks available — falling back to keyword search");
     }
   } catch (error) {
-    console.warn("Vector search unavailable, falling back to keyword search:", error);
+    console.warn("[RAG] Vector search failed, falling back to keyword search:", error);
   }
 
   const scored = chunks.map((chunk) => ({
@@ -78,7 +118,18 @@ export async function retrieveRelevantChunks(query: string, topK = 3): Promise<C
     score: simpleSimilarity(query, chunk.text),
   }));
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, topK).map((s) => ({ ...s.chunk, score: s.score }));
+  const topKeyword = scored.filter((s) => s.score > 0).slice(0, topK).map((s) => ({ ...s.chunk, score: s.score }));
+
+  console.log(`[RAG] Keyword fallback: ${topKeyword.length} chunks, top score: ${topKeyword[0]?.score?.toFixed(4) || "N/A"}`);
+
+  return {
+    chunks: topKeyword,
+    method: "keyword",
+    queryEmbeddingDims: null,
+    topScore: topKeyword[0]?.score ?? null,
+    bookChunksTotal: chunks.length,
+    embeddedChunksTotal: chunksWithEmbeddings.length,
+  };
 }
 
 export function augmentPromptWithContext(query: string, chunks: Chunk[]): string {

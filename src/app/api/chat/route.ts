@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { retrieveRelevantChunks, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
+import { retrieveRelevantChunksDetailed, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
 import { getPrompt } from "@/lib/prompts";
 import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError } from "@/lib/ollama/gateway-fetch";
 
@@ -70,12 +70,20 @@ export async function POST(request: NextRequest) {
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
     let ragContext = "";
     let sources: { chapter_num: number; chapter_title: string; chunk_index: number; text: string; score?: number }[] = [];
+    let ragMeta: { method: string; topScore: number | null; queryDims: number | null; bookChunks: number; embeddedChunks: number } | null = null;
 
     if (lastUserMessage && hasBookData()) {
-      const chunks = await retrieveRelevantChunks(lastUserMessage.content, 3);
-      if (chunks.length > 0) {
-        sources = chunks;
-        ragContext = augmentPromptWithContext(lastUserMessage.content, chunks);
+      const retrieval = await retrieveRelevantChunksDetailed(lastUserMessage.content, 3);
+      ragMeta = {
+        method: retrieval.method,
+        topScore: retrieval.topScore,
+        queryDims: retrieval.queryEmbeddingDims,
+        bookChunks: retrieval.bookChunksTotal,
+        embeddedChunks: retrieval.embeddedChunksTotal,
+      };
+      if (retrieval.chunks.length > 0) {
+        sources = retrieval.chunks;
+        ragContext = augmentPromptWithContext(lastUserMessage.content, retrieval.chunks);
       }
     }
 
@@ -129,6 +137,11 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
 
     const stream = new ReadableStream({
       async start(controller) {
+        if (ragMeta) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ rag: ragMeta })}\n\n`)
+          );
+        }
         if (sources.length > 0) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ sources })}\n\n`)
