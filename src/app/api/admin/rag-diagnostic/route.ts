@@ -96,14 +96,14 @@ function countBookReferences(aiResponse: string, chunks: { text: string }[]): {
   const matchedPhrases: string[] = [];
 
   for (const chunk of chunks) {
-    const sentences = chunk.text.split(/[.!?;]/).map((s) => s.trim()).filter((s) => s.length > 20);
+    const sentences = chunk.text.split(/[.!?;]/).map((s) => s.trim()).filter((s) => s.length > 15);
     let chunkReferenced = false;
 
     for (const sentence of sentences) {
       const words = sentence.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
       if (words.length < 3) continue;
 
-      for (let len = Math.min(5, words.length); len >= 3; len--) {
+      for (let len = Math.min(6, words.length); len >= 2; len--) {
         for (let start = 0; start <= words.length - len; start++) {
           const phrase = words.slice(start, start + len).join(" ");
           if (responseLower.includes(phrase)) {
@@ -119,7 +119,24 @@ function countBookReferences(aiResponse: string, chunks: { text: string }[]): {
     }
   }
 
-  return { referenced, total: chunks.length, matchedPhrases: matchedPhrases.slice(0, 8) };
+  const uniqueRareWords = new Set<string>();
+  for (const chunk of chunks) {
+    const words = chunk.text.toLowerCase().split(/\s+/);
+    for (const word of words) {
+      if (word.length > 5 && !["astrology", "horoscope", "planet", "planets", "zodiac", "because", "should", "would", "through", "between", "without"].includes(word)) {
+        if (aiResponse.toLowerCase().includes(word)) {
+          uniqueRareWords.add(word);
+        }
+      }
+    }
+  }
+
+  if (referenced === 0 && uniqueRareWords.size >= 3) {
+    referenced = 1;
+    matchedPhrases.push(`${uniqueRareWords.size} rare book words found in response`);
+  }
+
+  return { referenced, total: chunks.length, matchedPhrases: matchedPhrases.slice(0, 10) };
 }
 
 function getVerdict(
