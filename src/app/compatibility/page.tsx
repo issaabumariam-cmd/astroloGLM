@@ -69,7 +69,7 @@ export default function CompatibilityPage() {
           {/* Swap button */}
           <button
             onClick={swap}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-strong bg-surface text-foreground-muted transition-colors hover:bg-surface-muted hover:text-primary"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border-strong bg-surface text-foreground-muted transition-colors hover:bg-surface-muted hover:text-primary"
             aria-label="Swap signs"
           >
             <Repeat className="h-4 w-4" />
@@ -122,7 +122,7 @@ export default function CompatibilityPage() {
             <Card className="p-6">
               <div className="mb-4 flex items-center gap-2 text-success">
                 <Heart className="h-5 w-5" />
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Strengths</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.125em]">Strengths</h3>
               </div>
               <ul className="space-y-2.5">
                 {result.strengths.map((s, i) => (
@@ -136,7 +136,7 @@ export default function CompatibilityPage() {
             <Card className="p-6">
               <div className="mb-4 flex items-center gap-2 text-warning">
                 <Users className="h-5 w-5" />
-                <h3 className="text-sm font-semibold uppercase tracking-wide">Growth Areas</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.125em]">Growth Areas</h3>
               </div>
               <ul className="space-y-2.5">
                 {result.challenges.map((c, i) => (

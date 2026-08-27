@@ -18,7 +18,7 @@ export default function AccountPage() {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center gap-2">
           <User className="h-5 w-5 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">Profile</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.125em]">Profile</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary">
@@ -35,7 +35,7 @@ export default function AccountPage() {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center gap-2">
           <Crown className="h-5 w-5 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">Subscription</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.125em]">Subscription</h2>
         </div>
         <div className="flex items-center justify-between">
           <div>
@@ -55,7 +55,7 @@ export default function AccountPage() {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">Birth Data</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.125em]">Birth Data</h2>
         </div>
         <p className="text-sm text-foreground-muted">
           No birth data saved yet.{" "}
@@ -70,7 +70,7 @@ export default function AccountPage() {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">Chat History</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.125em]">Chat History</h2>
         </div>
         <p className="text-sm text-foreground-muted">
           Sign in to save your Jehana conversations across devices.
@@ -81,7 +81,7 @@ export default function AccountPage() {
       <Card className="mb-6 p-6">
         <div className="mb-4 flex items-center gap-2">
           <Shield className="h-5 w-5 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">Privacy & Data</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.125em]">Privacy & Data</h2>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between">

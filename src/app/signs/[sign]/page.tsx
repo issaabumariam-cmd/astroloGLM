@@ -91,7 +91,7 @@ export default async function SignProfilePage({ params }: PageProps<"/signs/[sig
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2 text-success">
             <Check className="h-5 w-5" />
-            <h3 className="text-sm font-semibold uppercase tracking-wide">Strengths</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.125em]">Strengths</h3>
           </div>
           <ul className="space-y-2.5">
             {sign.strengths.map((s) => (
@@ -105,7 +105,7 @@ export default async function SignProfilePage({ params }: PageProps<"/signs/[sig
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2 text-error">
             <AlertCircle className="h-5 w-5" />
-            <h3 className="text-sm font-semibold uppercase tracking-wide">Growth Areas</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.125em]">Growth Areas</h3>
           </div>
           <ul className="space-y-2.5">
             {sign.challenges.map((c) => (

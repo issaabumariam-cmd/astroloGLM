@@ -508,7 +508,7 @@ export default function AdvisorPage() {
                     setMessages((prev) => prev.filter((m) => !m.isHook));
                     sendMessage(HOOK_QUESTIONS[hook.hookId || ""] || "Tell me more");
                   }}
-                  className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-left text-sm text-foreground-muted transition-all hover:border-primary hover:bg-primary/10"
+                  className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-left text-sm text-foreground-muted transition-all hover:border-primary hover:bg-primary/10"
                 >
                   <span className="font-medium text-primary">?</span> {HOOK_QUESTIONS[hook.hookId || ""] || "Tell me more"}
                 </button>
@@ -523,7 +523,7 @@ export default function AdvisorPage() {
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
-                  className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-left text-sm text-foreground-muted transition-all hover:border-primary hover:bg-primary/10"
+                  className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-left text-sm text-foreground-muted transition-all hover:border-primary hover:bg-primary/10"
                 >
                   {s}
                 </button>

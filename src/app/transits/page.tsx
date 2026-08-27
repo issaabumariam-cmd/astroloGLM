@@ -180,7 +180,7 @@ export default function TransitsPage() {
             onClick={() => setTab(t.id)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               tab === t.id
-                ? "bg-primary text-white"
+                ? "bg-primary text-surface"
                 : "bg-surface-muted text-foreground-muted hover:bg-surface-muted/70 hover:text-foreground"
             }`}
           >
