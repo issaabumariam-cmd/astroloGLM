@@ -1,4 +1,9 @@
 import type { ChartData } from "@/lib/astrology/chart";
+import { planets } from "@/lib/astrology/planets";
+
+const PLANET_COLORS: Record<string, string> = Object.fromEntries(
+  planets.map((p) => [p.id, p.color])
+);
 
 export function ChartWheel({ chart, size = 400 }: { chart: ChartData; size?: number }) {
   const center = size / 2;
@@ -10,22 +15,12 @@ export function ChartWheel({ chart, size = 400 }: { chart: ChartData; size?: num
 
   const signs = ["♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓"];
 
-  const planetColors: Record<string, string> = {
-    sun: "#e8a838",
-    moon: "#c4c4d4",
-    mercury: "#a0a0a0",
-    venus: "#d4a890",
-    mars: "#c0563a",
-    jupiter: "#b8986a",
-    saturn: "#6b6157",
-    uranus: "#6ba0c4",
-    neptune: "#5b8fa8",
-    pluto: "#4a3b4a",
-  };
-
   function polarToCartesian(angleDeg: number, radius: number) {
     const rad = (angleDeg - 90) * (Math.PI / 180);
-    return { x: center + radius * Math.cos(rad), y: center + radius * Math.sin(rad) };
+    return {
+      x: Number((center + radius * Math.cos(rad)).toFixed(3)),
+      y: Number((center + radius * Math.sin(rad)).toFixed(3)),
+    };
   }
 
   const ascendantAngle = chart.rising.longitude;
@@ -111,7 +106,7 @@ export function ChartWheel({ chart, size = 400 }: { chart: ChartData; size?: num
       {chart.planets.map((planet) => {
         const angle = planet.longitude - offset;
         const pos = polarToCartesian(angle, planetRadius);
-        const color = planetColors[planet.id] || "var(--color-primary)";
+        const color = PLANET_COLORS[planet.id] || "var(--color-primary)";
         return (
           <g key={planet.id}>
             <circle cx={pos.x} cy={pos.y} r="11" fill="var(--color-surface)" stroke={color} strokeWidth="1" />

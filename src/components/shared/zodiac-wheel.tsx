@@ -50,8 +50,8 @@ export function ZodiacWheel({
       />
       {signs.map((sign, i) => {
         const angle = (i * 30 - 90) * (Math.PI / 180);
-        const x = center + radius * Math.cos(angle);
-        const y = center + radius * Math.sin(angle);
+        const x = Number((center + radius * Math.cos(angle)).toFixed(3));
+        const y = Number((center + radius * Math.sin(angle)).toFixed(3));
         return (
           <text
             key={sign}
