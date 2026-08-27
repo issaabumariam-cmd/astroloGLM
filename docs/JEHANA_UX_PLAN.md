@@ -1,8 +1,9 @@
 # Astrolo — Jehana Onboarding & Chat UX Plan
 
-## v1 — 2026-08-27
+## v2 — 2026-08-27 (locked, replaces v1)
 
-> **Status:** Plan for approval before implementation. Analyzes the as-built `/echo` + `/advisor` flows, identifies UX gaps, and proposes a world-class unified experience.
+> **Status:** APPROVED by Issa, session 5. All six UX tensions decided. Ready for implementation.
+> **v1 → v2 changes:** folded in the 6 UX-tension decisions (§15), added Phase A0 (auth), geo-search in A, mobile in C, errors throughout, updated phase plan (§16), updated "what NOT to change" (17-city dropdown → geo-search), corrected §2 table (RAG universal per §9).
 
 ---
 
@@ -58,10 +59,11 @@ Jehana is **one AI persona** with **two conversation modes**:
 |---|---|---|
 | **Input** | Sun sign only | Full birth chart (date + time + place) |
 | **Knowledge** | General sign traits | Your actual Sun/Moon/Rising + all planets + houses + aspects |
-| **RAG** | Optional | Yes (book passages retrieved per query) |
+| **RAG** | ✅ Universal (both modes — see §9) | ✅ Universal (both modes) |
+| **Chart-aware RAG (Pass 1)** | ❌ no chart to query from | ✅ queries book about *your placements* (see §10) |
 | **Cost tier** | Free, unlimited | Free 3 questions, then £5.99/mo |
 | **Use case** | "I'm a Leo, what's my week?" | "How does my Moon in Scorpio affect my relationships?" |
-| **Tone** | Friendly sign columnist | Wise friend who knows your chart |
+| **Tone** | Warm, concise, sign-level | Warm, layered, chart-specific |
 
 The **onboarding** (birth-data entry + chart preview + Jehana intro) is a **shared funnel** — both modes start the same way for a new user, but Echo Chat skips it (just pick a sign).
 
@@ -71,7 +73,9 @@ The **onboarding** (birth-data entry + chart preview + Jehana intro) is a **shar
 
 ### 3.1 Single entry point: `/jehana` (replaces both `/echo` and `/advisor`)
 
-One page, one flow, one chat. The `/echo` and `/advisor` routes redirect to `/jehana`.
+**Decision (§15.1): one route.** Two routes recreate the problem we're solving. The onboarding *stage* and chat *stage* live in the same page — first-timers see the funnel, returners skip to chat. This is how Pi (Inflection AI) does it — one entry, the AI adapts to where you are.
+
+The `/echo` and `/advisor` routes redirect to `/jehana`.
 
 ```
 /jehana
@@ -85,12 +89,13 @@ One page, one flow, one chat. The `/echo` and `/advisor` routes redirect to `/je
   │
   └── Stage 3: Chat (unified, mode-aware)
         ├─ Mode badge in header ("Echo" or "Deep Echo")
-        ├─ Free-tier counter (Deep Echo only: "2 free left")
+        ├─ Free-tier counter (Deep Echo only: "2 free left", server-enforced)
         ├─ Streaming responses (both modes)
-        ├─ RAG sources panel (Deep Echo only)
+        ├─ RAG sources panel (both modes — RAG is universal per §9)
         ├─ Hook questions (Deep Echo only, first 3)
         ├─ Suggestions (Echo: per-sign; Deep Echo: chart-aware)
-        └─ Upgrade prompt (Deep Echo after 3; Echo never)
+        ├─ Cosmic Weather card (above input — see §11)
+        └─ Upgrade prompt (Deep Echo after 3; modal sheet — see §15.4)
 ```
 
 ### 3.2 Onboarding deep-dive (the "Meet Jehana" moment)
@@ -99,8 +104,8 @@ This is the highest-stakes UX — it's the first impression, the conversion driv
 
 **The flow (Deep Echo onboarding):**
 
-1. **Birth data entry** (current: works, keep)
-   - Date (required), time (optional, with "deepens the reading" hint), city (dropdown, 17 cities)
+1. **Birth data entry** (current: works, enhance)
+   - Date (required), time (**strongly encouraged** — see §15.3, skippable), **geo-search birthplace** (Nominatim autocomplete — see §15/gap-3, replaces 17-city dropdown)
    - Privacy reassurance: "Your birth data is sacred. The cosmos gave it — we protect it." (keep — this is brand-defining)
    - CTA: "Meet Jehana — Free" (keep)
 
@@ -114,8 +119,10 @@ This is the highest-stakes UX — it's the first impression, the conversion driv
 
 3. **Chart reveal** (current: static Big Three, enhance)
    - Current: three glyph circles (Sun/Moon/Rising) side by side, static
-   - **Enhance:** animated reveal — each glyph fades in sequentially (Sun → Moon → Rising), ~400ms apart, with a subtle scale-in. The degrees appear with a count-up animation (0° → actual degrees, ~600ms). This is the "wow" — the user *sees* their chart come alive.
-   - If birth time was omitted: Moon + Rising appear with a "approximate" tag and a gentle "Add your birth time for precision" prompt (non-blocking, dismissible)
+   - **Enhance:** animated reveal — **Sun fades in first** (always accurate), ~400ms. Then:
+     - **If birth time entered:** Moon → Rising fade in sequentially (~400ms apart), degrees count-up (0° → actual, ~600ms). Full reveal.
+     - **If birth time omitted:** Sun stays. A gentle prompt from Jehana (in-character): "I can see your Sun in Cancer clearly. For your Moon and Rising — the parts that shape your inner world — I'd need your birth time. [Add time →] [Continue with Sun only →]" (see §15.3 — the curiosity hook)
+   - This is the "wow" — the user *sees* their chart come alive, and the missing pieces create the *want* to provide time.
 
 4. **Jehana's intro message** (current: greeting + personality summary + followUp, keep the structure)
    - **Enhance:** stream it token-by-token (like the chat does) instead of appearing all at once. This sets the expectation that Jehana *talks* to you, not *displays text*. Reuse the `/api/chat` streaming path for the intro.
@@ -133,13 +140,13 @@ This is the highest-stakes UX — it's the first impression, the conversion driv
 6. **Hook exchange** (current: one question → textarea → response, keep)
    - User picks a hook → types their answer → gets Jehana's response (streaming, like chat)
    - After response: "Ask another question" or continue free-form chatting
-   - Free counter: "2 free questions remaining" (subtle, non-urgent)
+   - Free counter: "2 free questions remaining" (subtle, non-urgent, **server-enforced** per §15/gap-1)
 
-7. **Upgrade moment** (current: after 2 exchanges, a Card paywall, keep the trigger)
-   - **Enhance:** Jehana says it in-chat (not a separate Card):
+7. **Upgrade moment** (current: after 2 exchanges, a Card paywall — **changed** per §15.4)
+   - **Modal sheet, not in-chat bubble.** Jehana says the warm trigger line in-chat:
      > "I've loved reading the first pages of your chart with you. There are ten planets in twelve houses — each one a story. Would you like to go deeper?"
-     > [Unlock Deep Echo — £5.99/month]  [Or keep chatting in Echo mode →]
-   - The "keep chatting in Echo mode" fallback is critical — don't hard-wall. The user drops to Echo (per-sign) chat, not out of the product.
+   - Then a **clean sheet slides up** with the offer (Jehana never asks for money — the app does, once, gently). This is the anti-Nebula pattern: the guide stays sacred, the transaction is a separate UI layer.
+   - The "keep chatting in Echo mode" fallback is critical — don't hard-wall. The user drops to Echo (per-sign) chat, **new thread** (hard downgrade per §15.2), not out of the product.
 
 ### 3.3 Echo onboarding (lightweight)
 
@@ -150,17 +157,20 @@ For users who pick "I know my sign":
 3. Per-sign suggestions appear as side-buttons (current: works, keep)
 4. No upgrade prompt (Echo is free, unlimited)
 5. A gentle upsell after ~5 exchanges: "Want a reading based on your *full* birth chart? Try Deep Echo →" (non-blocking, dismissible)
+6. **Soft upgrade** (§15.2): clicking "Try Deep Echo" enters birth data → Jehana says "now I can see your full chart" → **same thread deepens**, mode badge flips Echo → Deep Echo, free count starts.
 
 ### 3.4 The chat (unified)
 
 Both modes converge into the same chat UI, mode-aware:
 
-- **Header:** Jehana avatar (✦) + mode badge ("Echo" green / "Deep Echo" gold) + free counter (Deep Echo only) + "New Chat" button
+- **Header:** Jehana avatar (✦) + mode badge ("Echo" green / "Deep Echo" gold) + free counter (Deep Echo only, server-enforced) + "New Chat" button
 - **Messages:** streaming bubbles, user right / Jehana left, same as current `/advisor` chat
-- **RAG sources:** collapsible panel under each Deep Echo response (current: works, keep) — NOT shown in Echo mode (no RAG there)
+- **RAG sources:** collapsible panel under each response — **both modes** (RAG universal per §9). Echo gets message-level RAG; Deep Echo gets chart-aware + message-level RAG.
 - **Suggestions:** Echo = per-sign suggestions; Deep Echo = chart-aware hooks (first 3) then free-form
+- **Cosmic Weather card:** above input (see §11), collapsible, mode-aware
 - **Input:** single text field + send button, placeholder adapts to mode
 - **Disclaimer:** "For self-reflection and entertainment. Not a substitute for professional advice." (keep — GDPR/ASA compliant)
+- **Chat history:** device-local (localStorage) for both tiers — refresh doesn't lose the conversation. Cloud sync on signup (preserves readings across devices). Paid tier adds: unlimited cloud history, search, export. (§15.5)
 
 ---
 
@@ -168,42 +178,20 @@ Both modes converge into the same chat UI, mode-aware:
 
 1. **Jehana talks, she doesn't display** — every message streams, even the intro. She's a conversation, not an article.
 2. **Show your work** — hook questions show their chart-basis parenthetical; RAG sources are collapsible-but-present. The transparency *is* the moat.
-3. **Never hard-wall** — free tier exhaustion → downgrade to Echo mode, not a paywall wall. The user stays in conversation.
+3. **Never hard-wall** — free tier exhaustion → downgrade to Echo mode (new thread), not a paywall wall. The user stays in conversation.
 4. **The chart is the hero** — the Big Three reveal is the "wow" moment. Animate it. Make it feel sacred, not clinical.
 5. **Privacy is brand** — "Your birth data is sacred" appears at data entry and in the footer. It's not legal copy, it's a value proposition.
 6. **One product, two modes** — no separate `/echo` and `/advisor`. One `/jehana`, mode-switchable. Reduces cognitive load, increases perceived cohesion.
-7. **Progressive disclosure** — onboarding asks only for birth date first (required). Time + place are optional with clear value hints ("deepens the reading", "improves accuracy"). Never ask for more than needed.
+7. **Progressive disclosure** — onboarding asks only for birth date first (required). Time is strongly encouraged (the reveal creates the want) but skippable. Place via geo-search. Never ask for more than needed.
 8. **Loading is content** — don't show a bare spinner. Show what Jehana is "doing" (calculating positions, reading houses, listening). Transforms wait into anticipation.
+9. **Jehana never sells** — the guide stays sacred. Upgrades happen in a modal sheet, triggered by Jehana's warm words but executed by the app. The anti-Nebula pattern.
+10. **Graceful degradation** — every failure (gateway down, RAG miss, chart error, partial stream) has a specific, in-character, actionable response. No bare "error" states. (§15/gap-5)
 
 ---
 
-## 5. Migration plan (from current state)
+## 5. Migration plan (from current state) — superseded by §16
 
-### Phase A: Unify routes (1 day)
-- Create `/jehana` that merges `/advisor`'s chat + `/echo`'s onboarding
-- Redirect `/echo` → `/jehana`, `/advisor` → `/jehana`
-- Update nav: header "Jehana" → `/jehana`, "Meet Jehana" CTA → `/jehana`
-- Single chat component, mode-aware (Echo vs Deep Echo state)
-
-### Phase B: Onboarding polish (1 day)
-- Animate Big Three reveal (sequential fade-in + degree count-up)
-- Stream Jehana intro (reuse `/api/chat` SSE path instead of `/api/echo` JSON)
-- Add chart-basis parentheticals to hook buttons
-- Progressive loading hints during chart calc
-
-### Phase C: Chat refinements (0.5 day)
-- Mode badge in header (Echo green / Deep Echo gold)
-- In-chat upgrade message (not a separate Card)
-- "Keep chatting in Echo mode" fallback after upgrade decline
-- Gentle Echo → Deep Echo upsell after ~5 exchanges
-
-### Phase D: Delete dead code (0.5 day)
-- Remove `/echo` page (logic merged into `/jehana`)
-- Remove `/advisor` page (logic merged into `/jehana`)
-- Keep `/api/echo` (intro generation) + `/api/chat` (streaming) — both still used
-- Update sitemap, header, footer, CTA links
-
-**Total: ~3 days. No backend changes (both APIs stay). Pure frontend refactor + UX polish.**
+> See §16 for the locked, updated phase plan with auth (A0), geo-search, mobile, and all six gaps folded in.
 
 ---
 
@@ -214,32 +202,30 @@ Both modes converge into the same chat UI, mode-aware:
 - **The hook question concept** — chart-aware personalized questions are genuinely novel. Keep the mechanism.
 - **The privacy framing** — "Your birth data is sacred. The cosmos gave it — we protect it." is brand-defining copy. Keep it everywhere birth data is collected.
 - **The disclaimer** — "For self-reflection and entertainment. Not a substitute for professional advice." Required for ASA/GDPR compliance. Keep.
-- **The 17-city dropdown** — covers Europe + MENA pilot markets. Keep (will become geo-search in a later phase).
+- ~~**The 17-city dropdown** — covers Europe + MENA pilot markets. Keep (will become geo-search in a later phase).~~ **CHANGED (§15/gap-3):** replaced by Nominatim geo-search autocomplete in Phase A. The 17-city dropdown is a credibility limitation (a user born in Manchester, Marseille, or Marrakech can't enter their actual birthplace). Geo-search is table stakes for a premium Europe+MENA product.
 
 ---
 
-## 7. Open decisions (for Issa)
+## 7. Open decisions (for Issa) — superseded by §15
 
-- [ ] **Route name** — `/jehana` (person) vs `/chat` (function) vs keep `/advisor`? Recommendation: `/jehana` (brand the destination)
-- [ ] **Echo mode limit** — currently unlimited free. Keep unlimited, or cap at N/day to drive Deep Echo upgrades? Recommendation: keep unlimited (Echo is the top-of-funnel, don't throttle it)
-- [ ] **Deep Echo free count** — currently 3. Keep 3, or reduce to 1-2 for faster conversion? Recommendation: keep 3 (enough to feel the value, not so many they never upgrade)
-- [ ] **Chart-basis parentheticals** — show them (transparency moat) or hide them (cleaner UI)? Recommendation: show them — it's the differentiator no competitor has
-- [ ] **Animated chart reveal** — worth the engineering time, or ship static first? Recommendation: animate (it's the "wow" that drives screenshots/shares)
-- [ ] **Progressive loading hints** — honest (they're fake-progress) or skip? Recommendation: keep — they measurably reduce bounce on slow connections, and they're aspirationally true (the chart calc does take ~3-5s)
+> The original v1 open decisions are all resolved in §15 (the six UX tensions). See §15 for the locked calls.
 
 ---
 
 ## 8. Success metrics
 
-| Metric | Current baseline | Target after UX unification |
+| Metric | Current baseline | Target |
 |---|---|---|
-| Onboarding completion (% who enter birth date → see Jehana intro) | unknown | >80% |
-| Hook-question engagement (% who click at least 1 hook) | unknown | >60% |
-| Free → paid conversion (Deep Echo 3-exhausted → upgrade) | unknown | >5% |
-| Chat return rate (% who come back within 7 days) | unknown | >30% |
+| Onboarding completion (birth date → intro seen) | unknown | >80% |
+| Hook-question engagement (% click ≥1 hook) | unknown | >60% |
+| Free → paid conversion (3-exhausted → upgrade) | unknown | >5% |
+| Chat return rate (7-day) | unknown | >30% |
 | Time-to-first-message (landing → first Jehana response) | unknown | <60s |
+| **Cosmic Weather card engagement (% open it)** | new | >40% |
+| **Tap-to-ask from weather card (% tap a transit)** | new | >25% |
+| **Weekly transit reading open rate (paid)** | new | >50% |
 
-Instrument with Plausible events (privacy-first, no cookies): `jehana_start`, `jehana_intro_seen`, `jehana_hook_clicked`, `jehana_upgrade_shown`, `jehana_upgrade_clicked`.
+Instrument with Plausible events (privacy-first, no cookies): `jehana_start`, `jehana_intro_seen`, `jehana_hook_clicked`, `jehana_upgrade_shown`, `jehana_upgrade_clicked`, `cosmic_weather_opened`, `cosmic_weather_tapped`, `weekly_transit_opened`.
 
 ---
 
@@ -298,7 +284,7 @@ Birth data → Moshier ephemeris → natal chart (planets, houses, aspects)
                                       ↓
                         Book passages about YOUR placements
                                       ↓
-                     Jehana intro + personalized hook questions
+                      Jehana intro + personalized hook questions
                                       ↓
                     [each chat message] → message RAG query (Pass 2)
                                       ↓
@@ -377,6 +363,7 @@ Read more from Jehana →
 - Sent via email (Resend) or web push (if PWA push is set up)
 - **Deep Echo (paid) only** — the personalization requires chart data + premium tier
 - User can toggle alert types in account settings (retrogrades, full moons, hard aspects to personal planets, etc.)
+- **Alert granularity:** hard aspects (square, opposition, conjunction) to Sun, Moon, Ascendant only — not all 10 planets (would be too noisy)
 
 #### Level 3: Weekly transit reading (AI-generated, cached)
 
@@ -432,42 +419,9 @@ All components exist. The work is: (1) frontend card in chat, (2) scheduling for
 
 ---
 
-## 12. Updated migration plan (with transit features)
+## 12. ~~Updated migration plan~~ — superseded by §16
 
-### Phase A: Unify routes (1 day)
-- Create `/jehana` merging `/advisor` chat + `/echo` onboarding
-- Redirect `/echo` → `/jehana`, `/advisor` → `/jehana`
-- Update nav, CTA, sitemap
-- Single chat component, mode-aware
-
-### Phase B: Onboarding polish (1 day)
-- Animate Big Three reveal (sequential fade-in + degree count-up)
-- Stream Jehana intro (reuse `/api/chat` SSE)
-- Chart-basis parentheticals on hook buttons
-- Progressive loading hints
-
-### Phase C: Chat refinements + Cosmic Weather card (1 day)
-- Mode badge in header
-- In-chat upgrade message + Echo fallback
-- **Cosmic Weather card** above input (Level 1 transit interpretation)
-  - Echo: generic current transits
-  - Deep Echo: chart-aware annotations ("Mars square your natal Sun")
-  - Tap-to-ask: pre-fills chat input about that transit
-  - Cached daily
-
-### Phase D: Weekly transit reading + delete dead code (1 day)
-- **Weekly transit reading** (Level 3) — generated via cron, cached, delivered in-chat Monday morning
-- Prompt template for transit-focused reading
-- Remove `/echo` + `/advisor` pages (logic merged)
-- Update sitemap, header, footer
-
-### Phase E (future, after auth + push): Transit alerts (1-2 days)
-- **Transit alerts** (Level 2) — email via Resend, or web push
-- User alert preferences in account settings
-- Triggered by `generatePersonalTransitCalendar`
-- Requires: Supabase Auth (for user identity) + email/push setup
-
-**Total Phase A-D: ~4 days. Phase E deferred until auth + push infrastructure.**
+> See §16 for the locked phase plan.
 
 ---
 
@@ -483,33 +437,120 @@ All components exist. The work is: (1) frontend card in chat, (2) scheduling for
 | **Cosmic Weather card engagement (% open it)** | new | >40% |
 | **Tap-to-ask from weather card (% tap a transit)** | new | >25% |
 | **Weekly transit reading open rate (paid)** | new | >50% |
+| **Birth-time add rate (% who add time after Sun-only reveal)** | new | >40% |
+| **Returning-user skip-to-chat rate (returners who skip onboarding)** | new | >70% |
 
-Plausible events: `jehana_start`, `jehana_intro_seen`, `jehana_hook_clicked`, `jehana_upgrade_shown`, `jehana_upgrade_clicked`, `cosmic_weather_opened`, `cosmic_weather_tapped`, `weekly_transit_opened`.
+Plausible events: `jehana_start`, `jehana_intro_seen`, `jehana_hook_clicked`, `jehana_upgrade_shown`, `jehana_upgrade_clicked`, `cosmic_weather_opened`, `cosmic_weather_tapped`, `weekly_transit_opened`, `birth_time_added`.
 
 ---
 
-## 14. Updated open decisions (for Issa)
+## 14. ~~Updated open decisions~~ — superseded by §15
 
-- [ ] **Route name** — `/jehana` (brand the destination) vs `/chat` (function) vs keep `/advisor`? **Recommendation: `/jehana`**
-- [ ] **Echo mode limit** — keep unlimited free? **Recommendation: keep unlimited** (Echo is top-of-funnel, don't throttle)
-- [ ] **Deep Echo free count** — 3 questions? **Recommendation: keep 3** (enough to feel value, not so many they never upgrade)
-- [ ] **Chart-basis parentheticals on hooks** — show them (transparency moat)? **Recommendation: show**
-- [ ] **Animated chart reveal** — ship in Phase B? **Recommendation: yes** (it's the "wow" that drives shares)
-- [ ] **Progressive loading hints** — keep (fake-progress)? **Recommendation: keep** (reduces bounce)
-- [x] **RAG for both modes** — confirmed: RAG universal, chart depth is the differentiator (decided session 5)
-- [ ] **Cosmic Weather card default state** — open for Deep Echo / collapsed for Echo? **Recommendation: yes** (personal transits are interesting; generic ones are noise)
-- [ ] **Weekly transit reading delivery** — in-chat Monday message vs email vs both? **Recommendation: in-chat first** (no email infra needed), add email in Phase E
-- [ ] **Transit alert granularity** — which transits trigger alerts? **Recommendation: hard aspects (square, opposition, conjunction) to Sun, Moon, Ascendant only** (personal planets), not all 10 planets (would be too noisy)
+> All open decisions resolved in §15.
+
+---
+
+## 15. The six UX tensions (LOCKED — approved by Issa, session 5)
+
+### 15.1 One route or two? → **One route (`/jehana`)**
+
+Two routes recreate the exact problem we're solving. The onboarding *stage* and the chat *stage* live in the same page — first-timers see the funnel, returners skip to chat. This is how Pi (Inflection AI) does it — one entry, the AI adapts to where you are. Co-Star has one app, not a "meet Co-Star" page + a "chat with Co-Star" page. Splitting feels like two products; users smell fragmentation.
+
+### 15.2 Switch modes mid-chat? → **Soft upgrade, hard downgrade**
+
+This is how ChatGPT handles model switching — you can upgrade mid-conversation (GPT-4o takes over smoothly), but switching down is jarring so it starts fresh. For Jehana: an Echo user enters birth data → Jehana says "now I can see your full chart" → same thread deepens, mode badge flips. But if Deep Echo exhausts and drops to Echo, start a new thread — mixing chart-aware and sign-only responses in one scrollback is incoherent and would feel like Jehana "forgot" you.
+
+### 15.3 Birth time? → **Strongly encouraged but skippable**
+
+Co-Star requires it (hard wall — bad). The Pattern doesn't use time at all (avoids the issue — weaker). The world-class middle: make time feel *valuable*, not optional-but-fine. The reveal animation shows **Sun first** (always accurate), then if no time: "I can see your Sun in Cancer clearly. For your Moon and Rising — the parts that shape your inner world — I'd need your birth time. [Add time →] [Continue with Sun only →]". This converts the limitation into a **curiosity hook** — the user *wants* to give the time because they saw what they're missing, not because a form demanded it.
+
+### 15.4 Upgrade moment? → **Modal sheet, triggered by Jehana's words**
+
+Headspace, Calm, Audible all do this — the guide/voice *never sells*. The trigger is warm and in-character ("I've loved reading with you..."), then a clean sheet slides up with the offer. The chat stays sacred; the transaction is clearly a separate UI layer. An in-chat paywall bubble makes Jehana feel like a salesperson wearing a friend's mask — that's the trust-killer that killed Nebula (per MARKET_RESEARCH.md: "aggressive monetization, hidden costs, difficult cancellations"). We're the anti-Nebula. Jehana never asks for money; the app does, once, gently.
+
+### 15.5 Chat history? → **Device-local for both, cloud sync after signup**
+
+World-class apps don't gate *memory* behind paywalls — they gate *portability*. ChatGPT keeps free history device-local (and recent), syncs to cloud on login. For us: Echo and Deep Echo both save to localStorage (refresh doesn't lose the conversation — the #1 retention killer today). Cloud sync across devices is the **signup incentive**, not a paid feature — signing up preserves your readings on any device, and is required before payment anyway (Stripe needs an account). Paid tier then adds: unlimited cloud history, search, export. Free tier: last 30 days device-local.
+
+### 15.6 The six gaps — all folded in (auth, returning-user, geo-search, voice, errors, mobile)
+
+A plan that says "17-city dropdown, keep" while we've decided to build geo-search is a plan that lies to itself. World-class docs match reality. All six gaps are folded into the phase plan (§16):
+
+- **Auth (gap 1)** → Phase A0 (prerequisite — without it, "premium" is theater). Supabase anonymous auth, server-enforced free count, birth data persistence.
+- **Returning-user (gap 2)** → Phase A0 (same auth context — birth data persists, returners skip onboarding). Device-local → sync on signup.
+- **Geo-search (gap 3)** → Phase A (credibility feature, not deferrable). Nominatim autocomplete replaces 17-city dropdown.
+- **Voice across locales (gap 4)** → noted as a `[locale]` dependency, not a Jehana-phase item. Jehana speaks German natively (translated persona, not English-with-German-output). Female voice across all locales.
+- **Error UX (gap 5)** → woven through all phases (not a separate phase — it's a standard). Specific, in-character, actionable responses for every failure.
+- **Mobile (gap 6)** → dedicated pass in Phase C (chat is a different beast on 5.5": sticky input dvh, scroll-respect, collapsed weather card, enterKeyHint, pull-to-refresh disabled).
+
+---
+
+## 16. Locked phase plan (with all six gaps)
+
+### Phase A0: Auth + persistence (1 day) — PREREQUISITE
+- Supabase anonymous auth (zero friction — no email, no signup)
+- Server-enforced free count: `/api/chat` checks `profiles.ai_questions_used >= ai_questions_limit` → 402 before LLM
+- Birth data persists: `profiles.birth_date/time/place/lat/lng` populated on first Deep Echo onboarding
+- Returning users skip onboarding → "Welcome back, your [Cancer Sun / Scorpio Moon] chart is ready. Continue?"
+- Device-local chat history (localStorage) for both tiers — refresh doesn't lose conversation
+- Cloud sync on signup (preserves readings + birth data across devices)
+- Free count reset monthly (server-side `ai_questions_reset_at`)
+
+### Phase A: Unify routes + geo-search (1 day)
+- Create `/jehana` merging `/advisor` chat + `/echo` onboarding (one route per §15.1)
+- Redirect `/echo` → `/jehana`, `/advisor` → `/jehana`
+- **Geo-search birthplace** (Nominatim autocomplete) replaces 17-city dropdown in `/jehana` onboarding + `/personal` + `/birth-chart`
+- Single chat component, mode-aware (Echo vs Deep Echo state)
+- **Soft upgrade / hard downgrade** logic (§15.2): Echo → enter birth data → same thread deepens; Deep Echo exhausts → new Echo thread
+- Update nav, CTA, sitemap
+
+### Phase B: Onboarding polish (1 day)
+- **Animated Big Three reveal** (§15.3): Sun first (always accurate), then Moon → Rising if time entered. If no time: curiosity hook ("I can see your Sun clearly. For Moon and Rising, I'd need your birth time. [Add time →] [Continue with Sun only →]")
+- Stream Jehana intro (reuse `/api/chat` SSE path instead of `/api/echo` JSON)
+- Chart-basis parentheticals on hook buttons ("based on your Mars-Saturn square")
+- Progressive loading hints ("Calculating positions... Reading houses... Jehana is listening...")
+
+### Phase C: Chat refinements + Cosmic Weather + mobile (1 day)
+- Mode badge in header (Echo green / Deep Echo gold)
+- **Modal-sheet upgrade** (§15.4): Jehana says warm trigger in-chat → clean sheet slides up with offer → "keep chatting in Echo" fallback → new thread (hard downgrade)
+- **Cosmic Weather card** above input (Level 1 transit interpretation):
+  - Echo: generic current transits (collapsed by default)
+  - Deep Echo: chart-aware annotations ("Mars square your natal Sun") (open by default)
+  - Tap-to-ask: pre-fills chat input about that transit
+  - Cached daily
+- Gentle Echo → Deep Echo upsell after ~5 exchanges
+- **Mobile chat pass** (§15/gap-6): sticky input (dvh not vh), scroll-respect (don't yank on manual scroll-up), collapsed weather card on mobile, `enterKeyHint="send"`, pull-to-refresh disabled, tap targets ≥44px
+- **Error/edge-case UX** (§15/gap-5) throughout:
+  - Gateway down: "The cosmos seems busy" + retry button + preserve user message
+  - Intro fails mid-stream: show chart reveal anyway + "Jehana will join shortly" + retry
+  - RAG fails: subtle "responding from general knowledge (book unavailable)" tag
+  - Chart calc fails: specific actionable error ("Birth time too close to a cusp — try ±15 min")
+  - Partial stream: 30s no-token timeout → "Connection interrupted. [Retry]"
+  - Birth time omitted: Jehana caveats in conversation ("your Moon in Scorpio — approximate without your time")
+
+### Phase D: Weekly transit reading + delete dead code (0.5 day)
+- **Weekly transit reading** (Level 3) — generated via cron, cached (`horoscopes` scope: `weekly_transit`), delivered in-chat Monday morning
+- Prompt template for transit-focused reading (transit-to-natal math → RAG → Jehana prompt → cache)
+- Remove `/echo` + `/advisor` pages (logic merged into `/jehana`)
+- Keep `/api/echo` (intro generation) + `/api/chat` (streaming) — both still used
+- Update sitemap, header, footer, CTA links
+
+### Phase E (future, after auth + push infra): Transit alerts (1-2 days)
+- **Transit alerts** (Level 2) — email via Resend, or web push
+- User alert preferences in account settings
+- Triggered by `generatePersonalTransitCalendar`
+- Alert granularity: hard aspects (square, opposition, conjunction) to Sun, Moon, Ascendant only
+- Requires: Supabase Auth (for user identity) + email/push setup
+
+**Total Phase A0-D: ~4.5 days. Phase E deferred until auth + push infrastructure.**
 
 ---
 
 ## Next step
 
-Review this plan. Key questions:
-1. **Route name** — `/jehana`, `/chat`, or keep `/advisor`?
-2. **Scope** — do all 4 phases (A-D, ~4 days) or just Phase A (unify routes, 1 day)?
-3. **Animated reveal** — ship it in Phase B or defer?
-4. **Cosmic Weather card** — Phase C or defer?
-5. **Ready to start?**
-
-Reply "approved" to begin, or tell me what to change.
+Plan is **LOCKED** (v2, approved by Issa session 5). Start implementation:
+1. Phase A0: auth + persistence (prerequisite)
+2. Phase A: unify routes + geo-search
+3. Phase B: onboarding polish
+4. Phase C: chat + cosmic weather + mobile
+5. Phase D: weekly transit + cleanup
