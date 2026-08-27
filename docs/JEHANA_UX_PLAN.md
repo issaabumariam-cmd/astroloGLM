@@ -243,12 +243,273 @@ Instrument with Plausible events (privacy-first, no cookies): `jehana_start`, `j
 
 ---
 
+## 9. RAG: both modes, not gated (clarification)
+
+> **Decision confirmed with Issa, session 5:** RAG (book-grounded retrieval) is universal — both Echo and Deep Echo get it. It is NOT the paywall differentiator.
+
+**The actual differentiator is chart depth:**
+
+| | Echo Chat (free) | Deep Echo Chat (paid) |
+|---|---|---|
+| RAG (book passages retrieved) | ✅ gets it | ✅ gets it |
+| Chart data available to AI | sun sign only | full chart (Sun, Moon, Rising, all 10 planets, 12 houses, aspects) |
+| RAG query for chart-aware retrieval | ❌ no chart to query from | ✅ queries the book about *your specific placements* |
+| Answer specificity | "Leos lead with warmth — the book says..." | "Your Sun in Leo in the 5th house, with Moon in Scorpio squaring Saturn — the book speaks to this tension..." |
+
+**Why RAG stays universal:**
+- RAG is the **brand moat** ("grounded in 1917 classical astrology, not hallucinated"). If free users get generic AI astrology, we lose the trust-building that makes them want to upgrade.
+- Cost is negligible (~5ms vector search over 1,444 chunks, no gateway cost for retrieval — only the embed query which is already cached per-session).
+- The premium value is **personalization** (chart-specific placements + book passages about those exact placements), not knowledge access.
+- Gating RAG would make free tier *worse* without making paid tier *more valuable*.
+
+**Future scale consideration:** if gateway embedding costs become significant at millions of queries, throttle Echo to *cached per-sign RAG* (pre-computed passages) vs Deep Echo to *live per-query RAG*. Not a product decision — a cost optimization for later.
+
+---
+
+## 10. Two-pass RAG (how Deep Echo grounds in your chart)
+
+Deep Echo Chat does **two distinct RAG retrievals** — one for your chart, one per message:
+
+### Pass 1: Chart-aware intro + hook generation (`src/lib/astrology/echo.ts:57`)
+
+When you enter birth data, Jehana:
+1. Calculates your natal chart (Moshier ephemeris → planets, houses, aspects)
+2. Builds a RAG query from your **chart placements**: `"Cancer Sun Scorpio Moon Aquarius Rising Mars square Saturn personality character traits"`
+3. Retrieves book passages about **those specific placements**
+4. Generates her intro + 3 personalized hook questions **from those passages**
+
+So Jehana's opening message isn't generic — it's grounded in what the 1917 book actually says about *your* chart. The hook questions are chart-derived: "How do you handle conflict? *(based on your Mars-Saturn square)*".
+
+### Pass 2: Per-message retrieval (`src/app/api/chat/route.ts:76`)
+
+Each time you send a message, Jehana:
+1. Embeds your message text
+2. Matches it against the 1,444 book chunks
+3. Injects the retrieved passages as context before responding
+
+So if you ask "why do I clash with my Virgo coworker?", she pulls book passages on Virgo compatibility, sign-pair tensions, etc.
+
+### The full chain
+
+```
+Birth data → Moshier ephemeris → natal chart (planets, houses, aspects)
+                                      ↓
+                              Chart-aware RAG query (Pass 1)
+                                      ↓
+                        Book passages about YOUR placements
+                                      ↓
+                     Jehana intro + personalized hook questions
+                                      ↓
+                    [each chat message] → message RAG query (Pass 2)
+                                      ↓
+                    Book passages about your question
+                                      ↓
+                    Chart context + book context → Jehana response (streamed)
+```
+
+**Echo Chat does only Pass 2** (message-level RAG) — no chart to run Pass 1 on. So Echo gets book-grounded answers; Deep Echo gets book-grounded-**and**-chart-personalized answers. That's the upgrade value.
+
+---
+
+## 11. Cosmic Weather + Transit Interpretation
+
+> **Discussed with Issa, session 5.** "Cosmic weather" = Jehana's framing for current planetary transits and how they affect *you specifically*. Today transits exist as a standalone `/transits` page; the plan brings them *into* the chat.
+
+### 11.1 What exists today
+
+| Feature | Where | State |
+|---|---|---|
+| Live planetary positions | `/transits` page, `/api/transits` | ✅ Works (Moshier real-time) |
+| Transit calendar (Mercury retro, new/full moon, eclipses) | `/transits` page, `/api/transits/calendar`, `src/lib/astrology/astro-events.ts` | ✅ Works |
+| Transit-to-natal aspects | `src/lib/astrology/transit-natal.ts`, used by horoscope generator | ✅ Works (math done, not exposed in chat) |
+| Horoscopes with real transits baked in | `/horoscope`, `/personal`, `/api/horoscope/generate` | ✅ Works |
+| Jehana transit awareness in chat | `/api/chat` system prompt (`src/lib/prompts.ts:146`): "When discussing transits, reference the user's natal placements to show how the transit hits THEM specifically" | ✅ Works (reactive — user must ask) |
+| "Cosmic weather" mention | Jehana's Echo intro: "Ask me about your sign, transits, or the cosmic weather" | ✅ Copy only, no feature |
+
+### 11.2 The gap
+
+Transits are a **separate page** — users leave Jehana to see the cosmic weather. And Jehana's transit interpretation is **reactive** (user must ask) — she never *proactively* tells you a transit is hitting your chart.
+
+### 11.3 Three-level transit interpretation (the vision)
+
+All three levels use the **same backend** (transit-to-natal math + RAG + Jehana prompt). No new backend — only frontend + prompt + scheduling.
+
+#### Level 1: Cosmic Weather card (in-chat, passive)
+
+A collapsible card above the chat input, showing today's key transits with chart-aware annotations.
+
+**Echo mode** (no chart — generic):
+```
+☁ Cosmic Weather — Aug 27
+Mercury Rx begins Sep 2 · Full Moon in Pisces Sep 7 · Mars enters Scorpio Oct 11
+```
+
+**Deep Echo mode** (your chart — personal):
+```
+☁ Cosmic Weather — Aug 27
+⚠ Mars square your natal Sun — intensity week (exact Friday, orb 3°)
+◐ Full Moon in Pisces Sep 7 — lights your 7th house (relationships)
+℞ Mercury Rx Sep 2-26 — retraces your 4th house (home, family)
+[Ask Jehana about any of these →]
+```
+
+- Tap any line → pre-fills the chat input with a question about that transit
+- Collapsible (default open for Deep Echo, collapsed for Echo)
+- Updates daily (cached, not recalculated per render)
+- **Free for both modes** (Echo generic, Deep Echo personal)
+
+#### Level 2: Transit alerts (push/email, proactive)
+
+Before a major transit exacts against the user's natal chart, Jehana sends a one-paragraph personalized reading.
+
+```
+Subject: Mars is squaring your Sun tomorrow, [Name]
+
+Tomorrow (Fri Aug 30), Mars at 14° Scorpio squares your natal Sun at
+11° Leo. The book calls this a "trial by fire" — a week of asserting
+yourself when the path resists. With your Leo warmth, the challenge is
+not whether you'll fight, but whether you'll fight the right battle.
+
+Read more from Jehana →
+```
+
+- Triggered by `generatePersonalTransitCalendar` (already exists in `src/lib/astrology/astro-events.ts:346`)
+- Sent via email (Resend) or web push (if PWA push is set up)
+- **Deep Echo (paid) only** — the personalization requires chart data + premium tier
+- User can toggle alert types in account settings (retrogrades, full moons, hard aspects to personal planets, etc.)
+
+#### Level 3: Weekly transit reading (AI-generated, cached)
+
+A 3-paragraph personalized weekly forecast, generated like a horoscope but transit-focused:
+
+```
+This Week for You — Aug 27 to Sep 2
+
+Mars squares your natal Sun on Friday — the book speaks of "friction
+that forges." You may feel provoked to assert yourself, particularly in
+your career (Mars in your 10th house). Don't suppress the fire, but
+choose your battles — a square demands action, not reaction.
+
+Mercury begins its retrograde on Sep 2, retracing your 4th house of
+home and family. Expect old conversations to resurface. The book
+advises: "when Mercury turns back, turn back with it — review, don't
+rush." This is a week to reconnect with where you come from.
+
+The Full Moon in Pisces on Sep 7 lights your 7th house of
+partnerships. If something has been building in a relationship, it
+reaches clarity now. Trust what the moon illuminates — it won't show
+you anything that isn't already there.
+```
+
+- Generated weekly via cron (like horoscopes, but transit-to-natal focused)
+- Cached in `horoscopes` table (scope: `weekly_transit`)
+- **Deep Echo (paid) only** — delivered in chat as a Monday-morning message + in account
+- Uses the same pipeline: transit-to-natal math → RAG → Jehana prompt → stream/cache
+
+### 11.4 The mechanism (shared across all 3 levels)
+
+```
+Current planetary positions (Moshier ephemeris, real-time)
+        ↓
+Transit-to-natal aspect calculator (src/lib/astrology/transit-natal.ts)
+   "Mars at 14° Scorpio squares natal Sun at 11° Leo — orb 3°, exact Friday"
+        ↓
+RAG retrieval (book passages on Mars square Sun, on Scorpio-Leo tension)
+        ↓
+Jehana interprets it for THIS user:
+   "Mars is heating up your 10th house of career this week. With your
+    Leo Sun, this could feel like a push to assert yourself publicly —
+    but the square means friction, not flow..."
+```
+
+All components exist. The work is: (1) frontend card in chat, (2) scheduling for alerts/weekly, (3) prompt templates for transit readings, (4) email/push integration.
+
+### 11.5 The UX moat
+
+**No competitor does this.** Co-Star sends blunt notifications ("Mercury retrograde. Be careful.") — generic, anxiety-inducing, not personal. Astro.com shows *your* transits in a dense table you interpret yourself. CHANI sends human-written transit posts (not chart-specific, just sign-specific).
+
+**Jehana combines:** real ephemeris + your natal chart + 1917 book RAG + conversational AI. She tells you what the sky is doing, what it means for *your* chart specifically, and does it as a conversation — not a table, not a push notification, not a generic sign column. The transit-to-natal math + book RAG + chart context is the uncopyable stack.
+
+---
+
+## 12. Updated migration plan (with transit features)
+
+### Phase A: Unify routes (1 day)
+- Create `/jehana` merging `/advisor` chat + `/echo` onboarding
+- Redirect `/echo` → `/jehana`, `/advisor` → `/jehana`
+- Update nav, CTA, sitemap
+- Single chat component, mode-aware
+
+### Phase B: Onboarding polish (1 day)
+- Animate Big Three reveal (sequential fade-in + degree count-up)
+- Stream Jehana intro (reuse `/api/chat` SSE)
+- Chart-basis parentheticals on hook buttons
+- Progressive loading hints
+
+### Phase C: Chat refinements + Cosmic Weather card (1 day)
+- Mode badge in header
+- In-chat upgrade message + Echo fallback
+- **Cosmic Weather card** above input (Level 1 transit interpretation)
+  - Echo: generic current transits
+  - Deep Echo: chart-aware annotations ("Mars square your natal Sun")
+  - Tap-to-ask: pre-fills chat input about that transit
+  - Cached daily
+
+### Phase D: Weekly transit reading + delete dead code (1 day)
+- **Weekly transit reading** (Level 3) — generated via cron, cached, delivered in-chat Monday morning
+- Prompt template for transit-focused reading
+- Remove `/echo` + `/advisor` pages (logic merged)
+- Update sitemap, header, footer
+
+### Phase E (future, after auth + push): Transit alerts (1-2 days)
+- **Transit alerts** (Level 2) — email via Resend, or web push
+- User alert preferences in account settings
+- Triggered by `generatePersonalTransitCalendar`
+- Requires: Supabase Auth (for user identity) + email/push setup
+
+**Total Phase A-D: ~4 days. Phase E deferred until auth + push infrastructure.**
+
+---
+
+## 13. Updated success metrics
+
+| Metric | Current baseline | Target |
+|---|---|---|
+| Onboarding completion (birth date → intro seen) | unknown | >80% |
+| Hook-question engagement (% click ≥1 hook) | unknown | >60% |
+| Free → paid conversion (3-exhausted → upgrade) | unknown | >5% |
+| Chat return rate (7-day) | unknown | >30% |
+| Time-to-first-message (landing → first Jehana response) | unknown | <60s |
+| **Cosmic Weather card engagement (% open it)** | new | >40% |
+| **Tap-to-ask from weather card (% tap a transit)** | new | >25% |
+| **Weekly transit reading open rate (paid)** | new | >50% |
+
+Plausible events: `jehana_start`, `jehana_intro_seen`, `jehana_hook_clicked`, `jehana_upgrade_shown`, `jehana_upgrade_clicked`, `cosmic_weather_opened`, `cosmic_weather_tapped`, `weekly_transit_opened`.
+
+---
+
+## 14. Updated open decisions (for Issa)
+
+- [ ] **Route name** — `/jehana` (brand the destination) vs `/chat` (function) vs keep `/advisor`? **Recommendation: `/jehana`**
+- [ ] **Echo mode limit** — keep unlimited free? **Recommendation: keep unlimited** (Echo is top-of-funnel, don't throttle)
+- [ ] **Deep Echo free count** — 3 questions? **Recommendation: keep 3** (enough to feel value, not so many they never upgrade)
+- [ ] **Chart-basis parentheticals on hooks** — show them (transparency moat)? **Recommendation: show**
+- [ ] **Animated chart reveal** — ship in Phase B? **Recommendation: yes** (it's the "wow" that drives shares)
+- [ ] **Progressive loading hints** — keep (fake-progress)? **Recommendation: keep** (reduces bounce)
+- [x] **RAG for both modes** — confirmed: RAG universal, chart depth is the differentiator (decided session 5)
+- [ ] **Cosmic Weather card default state** — open for Deep Echo / collapsed for Echo? **Recommendation: yes** (personal transits are interesting; generic ones are noise)
+- [ ] **Weekly transit reading delivery** — in-chat Monday message vs email vs both? **Recommendation: in-chat first** (no email infra needed), add email in Phase E
+- [ ] **Transit alert granularity** — which transits trigger alerts? **Recommendation: hard aspects (square, opposition, conjunction) to Sun, Moon, Ascendant only** (personal planets), not all 10 planets (would be too noisy)
+
+---
+
 ## Next step
 
 Review this plan. Key questions:
 1. **Route name** — `/jehana`, `/chat`, or keep `/advisor`?
-2. **Scope** — do all 4 phases (A-D, ~3 days) or just Phase A (unify routes, 1 day)?
+2. **Scope** — do all 4 phases (A-D, ~4 days) or just Phase A (unify routes, 1 day)?
 3. **Animated reveal** — ship it in Phase B or defer?
-4. **Ready to start?**
+4. **Cosmic Weather card** — Phase C or defer?
+5. **Ready to start?**
 
 Reply "approved" to begin, or tell me what to change.
