@@ -18,14 +18,13 @@ const footerLinks = {
     { href: "/about", label: "About" },
     { href: "/privacy", label: "Privacy" },
     { href: "/terms", label: "Terms" },
-    { href: "/contact", label: "Contact" },
   ],
 };
 
 export function Footer() {
   return (
     <footer className="mt-16 border-t border-border bg-surface-muted/50">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2.5">
