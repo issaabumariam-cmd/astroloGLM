@@ -7,7 +7,7 @@ import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "/advisor", label: "Jehana" },
+  { href: "/jehana", label: "Jehana" },
   { href: "/horoscope", label: "Horoscope" },
   { href: "/personal", label: "Personal" },
   { href: "/signs", label: "Signs" },
@@ -43,7 +43,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/echo" className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-primary-hover sm:inline-flex">
+          <Link href="/jehana" className="hidden items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-primary-hover sm:inline-flex">
             <Sparkles className="h-4 w-4" />
             Meet Jehana
           </Link>
@@ -79,7 +79,7 @@ export function Header() {
             </Link>
           ))}
           <Link
-            href="/echo"
+            href="/jehana"
             onClick={() => setMobileOpen(false)}
             className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-center text-sm font-medium text-surface"
           >

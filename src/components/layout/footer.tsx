@@ -9,7 +9,7 @@ const footerLinks = {
     { href: "/birth-chart", label: "Birth Chart" },
   ],
   Features: [
-    { href: "/advisor", label: "Jehana" },
+    { href: "/jehana", label: "Jehana" },
     { href: "/book", label: "Library" },
     { href: "/transits", label: "Current Transits" },
     { href: "/pricing", label: "Premium" },

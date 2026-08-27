@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/signs",
     "/compatibility",
     "/birth-chart",
-    "/advisor",
+    "/jehana",
     "/transits",
     "/book",
     "/pricing",
