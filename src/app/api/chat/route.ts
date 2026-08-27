@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunksDetailed, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
 import { getPrompt } from "@/lib/prompts";
 import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError } from "@/lib/ollama/gateway-fetch";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
 
@@ -65,6 +66,35 @@ export async function POST(request: NextRequest) {
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: "Messages required" }, { status: 400 });
+    }
+
+    // Server-enforced free count check for Deep Echo (tier=premium = chart-aware chat)
+    // Echo chat (no tier or tier=free) is unlimited
+    let userUuid: string | null = null;
+    let isPremiumUser = false;
+    if (tier === "premium" && chartData) {
+      const authHeader = request.headers.get("authorization");
+      const accessToken = authHeader?.replace("Bearer ", "");
+      if (accessToken) {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(accessToken);
+        if (user) {
+          userUuid = user.id;
+          const { data: profile } = await supabaseAdmin
+            .from("profiles")
+            .select("ai_questions_used, ai_questions_limit, subscription_status")
+            .eq("id", user.id)
+            .single();
+          if (profile) {
+            isPremiumUser = profile.subscription_status === "premium";
+            if (!isPremiumUser && profile.ai_questions_used >= profile.ai_questions_limit) {
+              return NextResponse.json(
+                { error: "You've used your free Deep Echo questions. Upgrade for unlimited access.", code: "FREE_LIMIT_REACHED" },
+                { status: 402 }
+              );
+            }
+          }
+        }
+      }
     }
 
     const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
@@ -178,6 +208,24 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
             }
           }
         } finally {
+          // Increment free count for non-premium Deep Echo users (atomic via fetched value)
+          if (userUuid && !isPremiumUser) {
+            try {
+              const { data: profile } = await supabaseAdmin
+                .from("profiles")
+                .select("ai_questions_used")
+                .eq("id", userUuid)
+                .single();
+              if (profile) {
+                await supabaseAdmin
+                  .from("profiles")
+                  .update({ ai_questions_used: (profile.ai_questions_used || 0) + 1 })
+                  .eq("id", userUuid);
+              }
+            } catch (e) {
+              console.warn("Failed to increment ai_questions_used:", e);
+            }
+          }
           controller.close();
         }
       },
