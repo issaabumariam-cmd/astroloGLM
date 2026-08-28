@@ -425,7 +425,7 @@ export default function JehanaPage() {
                   </p>
                   {hasSavedBirthData && (
                     <p className="mt-2 text-xs font-medium text-primary">
-                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved.
+                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved. Continue →
                     </p>
                   )}
                 </div>
@@ -448,6 +448,11 @@ export default function JehanaPage() {
                     Enter your birth details. Jehana reads your full chart and you ask
                     anything — Sun, Moon, houses, transits, relationships.
                   </p>
+                  {hasSavedBirthData && (
+                    <p className="mt-2 text-xs font-medium text-primary">
+                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved. Continue →
+                    </p>
+                  )}
                 </div>
                 <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
               </div>
@@ -985,10 +990,92 @@ export default function JehanaPage() {
               </div>
             )}
 
-            {/* Next question / Continue to chat */}
-            <button onClick={handleNext} className="btn-primary w-full">
-              {isLastHook ? <><BookOpen className="h-4 w-4" /> Continue to free chat →</> : <><Sparkles className="h-4 w-4" /> Next question →</>}
-            </button>
+            {/* Next question OR end-of-guided choice screen */}
+            {!isLastHook && (
+              <button onClick={handleNext} className="btn-primary w-full">
+                <Sparkles className="h-4 w-4" /> Next question →
+              </button>
+            )}
+
+            {isLastHook && (
+              <div className="mt-2 space-y-3">
+                <div className="rounded-lg bg-surface-muted p-4 text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    I&apos;ve read the first pages of your chart with you.
+                  </p>
+                  <p className="mt-1 text-xs text-foreground-muted">
+                    There are ten planets in twelve houses — each one a story. Where would you like to go next?
+                  </p>
+                </div>
+
+                {/* Option 1: Continue to free chat (you drive) */}
+                <button
+                  onClick={handleNext}
+                  className="btn-primary w-full"
+                >
+                  <BookOpen className="h-4 w-4" /> Continue to free chat — ask me anything →
+                </button>
+
+                {/* Option 2: More guided questions (Jehana drives) — premium */}
+                <button
+                  onClick={() => {
+                    // Generate 3 more chart-driven questions by calling /api/echo intro again
+                    // Re-use the same chart — just get fresh questions
+                    setLoading(true);
+                    setError(null);
+                    fetch("/api/echo", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "intro",
+                        birthDate,
+                        birthTime: birthTime || undefined,
+                        lat: birthLat,
+                        lng: birthLng,
+                        birthPlace,
+                      }),
+                    }).then(r => r.json()).then(data => {
+                      if (data.intro?.hookQuestions) {
+                        setGuidedIntro({
+                          ...guidedIntro!,
+                          hookQuestions: [...guidedIntro!.hookQuestions, ...data.intro.hookQuestions],
+                        });
+                        setGuidedResponse(null);
+                        setGuidedUserAnswer("");
+                        setGuidedFollowUps(0);
+                        setGuidedFollowUpResponse(null);
+                        setGuidedFollowUpInput("");
+                        setGuidedThread([]);
+                        setGuidedHookIdx(guidedHookIdx + 1);
+                      }
+                      setLoading(false);
+                    }).catch(() => {
+                      setError("Jehana couldn't generate more questions. Try the free chat instead.");
+                      setLoading(false);
+                    });
+                  }}
+                  className="btn-secondary w-full"
+                >
+                  <Sparkles className="h-4 w-4" /> Ask Jehana 3 more guided questions
+                  {!isPremium && <span className="ml-2 text-[10px] text-primary">Premium</span>}
+                </button>
+
+                {/* Option 3: Back to welcome */}
+                <button
+                  onClick={() => {
+                    setGuidedResponse(null);
+                    setGuidedIntro(null);
+                    setGuidedChart(null);
+                    setGuidedHookIdx(0);
+                    setStage("welcome");
+                  }}
+                  className="btn-ghost w-full text-xs"
+                >
+                  ← Back to home
+                </button>
+              </div>
+            )}
+
             {!isLastHook && (
               <p className="mt-4 text-center text-xs text-foreground-subtle">
                 Question {guidedHookIdx} of {guidedIntro!.hookQuestions.length}
