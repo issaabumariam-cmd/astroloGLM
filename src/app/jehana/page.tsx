@@ -164,6 +164,8 @@ export default function JehanaPage() {
     setIsPersonalized(false);
     setExchangeCount(0);
     setShowUpgrade(false);
+    setChartData(null);
+    setHookQuestions([]);
     setMessages([
       {
         role: "assistant",
