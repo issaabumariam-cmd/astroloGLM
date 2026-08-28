@@ -11,7 +11,8 @@ export type PromptKey =
   | "compatibilityReading"
   | "horoscopeGeneration"
   | "jehanaIntro"
-  | "jehanaHookResponse";
+  | "jehanaHookResponse"
+  | "weeklyTransitReading";
 
 export type PromptConfig = Record<PromptKey, string>;
 
@@ -33,13 +34,13 @@ export const PROMPT_META: PromptMeta[] = [
     key: "chatAdvisor",
     label: "Jehana Echo Chat",
     description: "Task instructions for the free conversational chat advisor (Quick Chat + Personalized 3 free). Shorter responses, general guidance. Variables: {chartContext}, {signContext}, {ragContext}.",
-    usedBy: "/api/chat (tier=free) — Quick Chat and Personalized (3 free) on /advisor",
+    usedBy: "/api/chat (tier=free) — Echo Chat on /jehana",
   },
   {
     key: "premiumAdvisor",
     label: "Jehana Deep Echo Chat",
     description: "Task instructions for PREMIUM subscribers only. Full in-depth natal chart conversation — deep psychological analysis, house-by-house breakdown, aspect interpretation, transit timing. Longer responses, book references, life-coaching depth. Variables: {chartContext}, {ragContext}.",
-    usedBy: "/api/chat (tier=premium) — Premium unlimited chat on /advisor",
+    usedBy: "/api/chat (tier=premium) — Deep Echo Chat on /jehana",
   },
   {
     key: "birthChartInterpretation",
@@ -69,7 +70,13 @@ export const PROMPT_META: PromptMeta[] = [
     key: "jehanaHookResponse",
     label: "Jehana Hook Response",
     description: "How Jehana responds when a user answers one of the 3 hook questions. Variables: {chartSummary}, {bookContext}, {hookQuestion}, {chartBasis}, {userAnswer}.",
-    usedBy: "/api/echo (action: hook-response) — the /echo and /advisor hook flows",
+    usedBy: "/api/echo (action: hook-response) — the /jehana guided reading flow",
+  },
+  {
+    key: "weeklyTransitReading",
+    label: "Weekly Transit Reading",
+    description: "Generates a 3-paragraph personalized weekly forecast based on transit-to-natal aspects. Variables: {chartSummary}, {transitSection}, {bookContext}.",
+    usedBy: "Cron job — cached in horoscopes table (scope: weekly_transit), delivered in /jehana chat Monday morning",
   },
 ];
 
@@ -259,6 +266,17 @@ const DEFAULT_HOOK_RESPONSE = `Respond as Jehana:
 
 Keep it under 200 words. Tone: wise friend who happens to know astrology. Do NOT say "according to the book" — just weave the wisdom naturally. Ground your response in the book excerpts provided — they are your primary knowledge source, not general astrological training.`;
 
+const DEFAULT_WEEKLY_TRANSIT = `Generate a personalized weekly transit reading for this user. Write as Jehana — warm, specific, grounded in the book.
+
+Structure:
+- 3 paragraphs, one for each major transit this week
+- Each paragraph: name the transit (planet + aspect + natal placement), describe what it means for THIS person's chart, and offer a practical reflection grounded in the book's wisdom
+- Reference the user's actual natal placements (Sun sign, Moon sign, houses) — never generic
+- If book excerpts are provided, weave their teachings naturally (don't say "the book says")
+- Tone: wise friend who sees the sky and your chart simultaneously
+
+Keep it 250-350 words total. No headings or bullet points — flowing prose. End with a gentle, actionable reflection.`;
+
 const DEFAULTS: PromptConfig = {
   jehanaPersona: DEFAULT_PERSONA,
   chatAdvisor: DEFAULT_CHAT_ADVISOR,
@@ -268,6 +286,7 @@ const DEFAULTS: PromptConfig = {
   horoscopeGeneration: DEFAULT_HOROSCOPE,
   jehanaIntro: DEFAULT_JEHANA_INTRO,
   jehanaHookResponse: DEFAULT_HOOK_RESPONSE,
+  weeklyTransitReading: DEFAULT_WEEKLY_TRANSIT,
 };
 
 let cachedConfig: PromptConfig | null = null;
