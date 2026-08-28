@@ -146,7 +146,7 @@ export default function JehanaPage() {
   // Check for returning user with saved birth data
   useEffect(() => {
     if (!user) return;
-    loadBirthData().then(async (data) => {
+    loadBirthData(user.id).then(async (data) => {
       if (data && data.birthDate) {
         // Returning user — pre-fill and offer to skip
         setBirthDate(data.birthDate);
@@ -154,7 +154,7 @@ export default function JehanaPage() {
         setBirthPlace(data.birthPlace || "");
         setBirthLat(data.birthLat);
         setBirthLng(data.birthLng);
-        const usage = await getAiUsage();
+        const usage = await getAiUsage(user.id);
         if (usage) {
           setFreeUsed(usage.used);
           setFreeLimit(usage.limit);

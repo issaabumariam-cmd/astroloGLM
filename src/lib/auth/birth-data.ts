@@ -29,14 +29,19 @@ export async function saveBirthData(data: BirthData): Promise<{ error: string | 
   return { error: error?.message || null };
 }
 
-export async function loadBirthData(): Promise<BirthData | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export async function loadBirthData(userId?: string): Promise<BirthData | null> {
+  let uid = userId;
+
+  if (!uid) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    uid = user.id;
+  }
 
   const { data, error } = await supabase
     .from("profiles")
     .select("birth_date, birth_time, birth_place, birth_lat, birth_lng, zodiac_sign")
-    .eq("id", user.id)
+    .eq("id", uid)
     .single();
 
   if (error || !data || !data.birth_date) return null;
@@ -51,14 +56,19 @@ export async function loadBirthData(): Promise<BirthData | null> {
   };
 }
 
-export async function getAiUsage(): Promise<{ used: number; limit: number; isPremium: boolean } | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export async function getAiUsage(userId?: string): Promise<{ used: number; limit: number; isPremium: boolean } | null> {
+  let uid = userId;
+
+  if (!uid) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    uid = user.id;
+  }
 
   const { data, error } = await supabase
     .from("profiles")
     .select("ai_questions_used, ai_questions_limit, subscription_status")
-    .eq("id", user.id)
+    .eq("id", uid)
     .single();
 
   if (error || !data) return null;
