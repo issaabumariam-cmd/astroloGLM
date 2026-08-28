@@ -38,7 +38,7 @@ export default function HomePage() {
               echoes it back. Not predictions. Reflections of who you already are.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-              <Link href="/advisor" className="btn-primary">
+              <Link href="/jehana" className="btn-primary">
                 <Sparkles className="h-4 w-4" />
                 Meet Jehana — Free
               </Link>
@@ -223,7 +223,7 @@ export default function HomePage() {
             The universe wrote your story. Jehana reads it back to you.
           </p>
           <div className="mt-6">
-            <Link href="/advisor" className="btn-primary">
+            <Link href="/jehana" className="btn-primary">
               <Sparkles className="h-4 w-4" />
               Begin Your Journey
             </Link>

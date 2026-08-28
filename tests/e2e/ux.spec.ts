@@ -14,7 +14,7 @@ test.describe("Mobile UX", () => {
     await page.goto("/");
     const hamburger = page.locator('button[aria-label="Toggle menu"]');
     await hamburger.click();
-    await expect(page.locator('a:has-text("Meet Jehana")')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByRole("link", { name: "Meet Jehana", exact: true })).toBeVisible({ timeout: 3000 });
     await screenshot(page, "mobile-nav-open");
   });
 
