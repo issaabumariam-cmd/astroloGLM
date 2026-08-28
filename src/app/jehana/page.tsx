@@ -52,7 +52,7 @@ type ChartData = {
   aspects: { planet1: string; planet2: string; type: string; orb: number; glyph: string }[];
 };
 
-type Stage = "welcome" | "echo-pick" | "deep-onboard" | "chat";
+type Stage = "welcome" | "echo-pick" | "deep-onboard" | "guided-onboard" | "chat";
 
 const HOOK_QUESTIONS: Record<string, string> = {
   conflict: "How do you handle conflict?",
@@ -93,10 +93,29 @@ export default function JehanaPage() {
   const [freeUsed, setFreeUsed] = useState(0);
   const [isPremium, setIsPremium] = useState(false);
   const [showAddTime, setShowAddTime] = useState(false);
+  const [guidedHookIdx, setGuidedHookIdx] = useState(0);
+  const [guidedUserAnswer, setGuidedUserAnswer] = useState("");
+  const [guidedResponse, setGuidedResponse] = useState<string | null>(null);
+  const [guidedLoading, setGuidedLoading] = useState(false);
+  const [guidedChart, setGuidedChart] = useState<{ sun: { sign: string; degrees: number; glyph: string }; moon: { sign: string; degrees: number; glyph: string }; rising: { sign: string; degrees: number; glyph: string }; birthDateOnly: boolean } | null>(null);
+  const [guidedIntro, setGuidedIntro] = useState<{ greeting: string; personalitySummary: string; hookQuestions: HookQuestion[]; followUp: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const pinnedToBottomRef = useRef(true);
 
+  // Track whether user is near the bottom of the scroll container
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    pinnedToBottomRef.current = distFromBottom < 80;
+  };
+
+  // Only auto-scroll if user was already at the bottom (don't yank on manual scroll-up)
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (pinnedToBottomRef.current) {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // Check for returning user with saved birth data
@@ -379,11 +398,37 @@ export default function JehanaPage() {
           </div>
 
           <div className="mt-8 space-y-4">
-            {/* Deep Echo — full chart */}
-            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("deep-onboard")}>
+            {/* Guided Reading — linear, Jehana drives */}
+            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("guided-onboard")}>
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
                   <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-serif text-lg font-semibold text-foreground">Guided Reading</h3>
+                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">Free · Guided</span>
+                  </div>
+                  <p className="mt-1 text-sm text-foreground-muted">
+                    Don&apos;t know what to ask? Jehana reads your chart and guides you
+                    through it — one question at a time. She asks, you answer, she
+                    reflects. No chat pressure, just a slow reading.
+                  </p>
+                  {hasSavedBirthData && (
+                    <p className="mt-2 text-xs font-medium text-primary">
+                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved.
+                    </p>
+                  )}
+                </div>
+                <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
+              </div>
+            </div>
+
+            {/* Deep Echo — full chart chat */}
+            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("deep-onboard")}>
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <BookOpen className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -391,15 +436,9 @@ export default function JehanaPage() {
                     <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">3 Free Questions</span>
                   </div>
                   <p className="mt-1 text-sm text-foreground-muted">
-                    Enter your birth details. Jehana reads your full chart — Sun, Moon,
-                    Rising, all planets, houses, and aspects — and starts a conversation
-                    about who you uniquely are.
+                    Enter your birth details. Jehana reads your full chart and you ask
+                    anything — Sun, Moon, houses, transits, relationships.
                   </p>
-                  {hasSavedBirthData && (
-                    <p className="mt-2 text-xs font-medium text-primary">
-                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved. Continue →
-                    </p>
-                  )}
                 </div>
                 <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
               </div>
@@ -418,7 +457,7 @@ export default function JehanaPage() {
                   </div>
                   <p className="mt-1 text-sm text-foreground-muted">
                     Pick your zodiac sign and start chatting. No birth date needed —
-                    general guidance based on your sun sign and the current cosmic weather.
+                    general guidance based on your sun sign.
                   </p>
                 </div>
                 <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
@@ -561,6 +600,280 @@ export default function JehanaPage() {
     );
   }
 
+  // GUIDED ONBOARD STAGE — linear, Jehana drives (from old /echo)
+  if (stage === "guided-onboard") {
+    // Sub-stages within guided: input → loading → intro → hook-answer → hook-response → done
+    if (loading) {
+      return (
+        <div className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4">
+          <div className="fade-in flex flex-col items-center justify-center py-20">
+            <ZodiacWheel size={72} className="text-primary spin-slow mb-8" />
+            <p className="text-sm font-medium text-primary">{loadingHint || "The cosmos is aligning..."}</p>
+            <p className="mt-2 text-xs text-foreground-subtle">Jehana is listening to your chart</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Not started yet — show birth data form
+    if (!guidedIntro) {
+      const handleGuidedStart = async () => {
+        if (!birthDate || birthLat === undefined || birthLng === undefined) {
+          setError("Please enter your birth date and birth location.");
+          return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+          const city = { lat: birthLat, lng: birthLng, name: birthPlace };
+          const response = await fetch("/api/echo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "intro",
+              birthDate,
+              birthTime: birthTime || undefined,
+              lat: city.lat,
+              lng: city.lng,
+              birthPlace: city.name,
+            }),
+          });
+          if (!response.ok) throw new Error("Failed");
+          const data = await response.json();
+          setGuidedChart(data.chart);
+          setGuidedIntro(data.intro);
+          setGuidedHookIdx(0);
+          const sign = getSignById(data.chart.sun.sign.toLowerCase());
+          setSelectedSign(sign?.id || "aries");
+          // Save birth data
+          await saveBirthData({ birthDate, birthTime: birthTime || undefined, birthPlace, birthLat, birthLng, zodiacSign: sign?.id });
+          if (!birthTime) setShowAddTime(true);
+        } catch {
+          setError("Jehana couldn't connect. Please try again.");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="mx-auto max-w-xl px-4 py-12">
+          <div className="text-center">
+            <ZodiacWheel size={72} className="mx-auto text-primary spin-slow" />
+            <Eyebrow className="mt-4">Guided Reading · Free</Eyebrow>
+            <h1 className="heading-serif mt-2 text-3xl font-semibold text-foreground">
+              Let Jehana guide you.
+            </h1>
+            <p className="mt-3 text-sm text-foreground-muted">
+              Enter your birth details. Jehana reads your chart, introduces herself,
+              and asks you questions — one at a time. No pressure, just a slow reading.
+            </p>
+          </div>
+
+          <Card className="mt-8 p-6 text-left">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-foreground-muted">
+                  <Calendar className="h-4 w-4 text-primary" /> Birth Date
+                </label>
+                <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} max={new Date().toISOString().split("T")[0]} min="1900-01-01" className="input-field" />
+              </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-foreground-muted">
+                  <Clock className="h-4 w-4 text-primary" /> Birth Time
+                  <span className="text-xs text-foreground-subtle">(deepens the reading)</span>
+                </label>
+                <input type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} className="input-field" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground-muted">
+                  <MapPin className="inline h-4 w-4 mr-1.5 text-primary" /> Birth Location
+                </label>
+                <GeoSearch value={birthPlace} placeholder="Search for your birth city..." onSelect={(r) => { setBirthPlace(r.name); setBirthLat(r.lat); setBirthLng(r.lng); }} />
+              </div>
+              {error && <p className="text-sm text-error">{error}</p>}
+              <button onClick={handleGuidedStart} disabled={!birthDate || birthLat === undefined || loading} className="btn-primary w-full disabled:opacity-50">
+                <Sparkles className="h-4 w-4" /> Begin Your Reading
+              </button>
+            </div>
+          </Card>
+          <p className="mt-4 text-center text-xs text-foreground-subtle">Your birth data is sacred. The cosmos gave it — we protect it.</p>
+          <button onClick={() => setStage("welcome")} className="btn-ghost mt-4 text-xs">← Back</button>
+        </div>
+      );
+    }
+
+    // Chart reveal + intro
+    if (guidedIntro && guidedHookIdx === 0 && !guidedResponse && !guidedUserAnswer) {
+      return (
+        <div className="relative mx-auto max-w-xl px-4 py-12">
+          <div
+            className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03]"
+            style={{ width: "700px", height: "700px" }}
+          >
+            <ZodiacWheel size={700} className="text-primary" />
+          </div>
+          <div className="relative z-10 fade-in">
+            {guidedChart && (
+              <Card className="mb-6 p-6">
+                <p className="mb-4 text-center text-xs uppercase tracking-[0.125em] text-primary">Your Cosmic Blueprint</p>
+                <div className="flex items-center justify-around">
+                  {[
+                    { label: "Sun", data: guidedChart.sun },
+                    { label: "Moon", data: guidedChart.moon },
+                    { label: "Rising", data: guidedChart.rising },
+                  ].map((item) => {
+                    const sign = getSignById(item.data.sign.toLowerCase()) || zodiacSigns.find((s) => s.name === item.data.sign);
+                    return (
+                      <div key={item.label} className="text-center">
+                        <p className="text-xs uppercase tracking-[0.125em] text-primary">{item.label}</p>
+                        <div className="mx-auto my-2 flex h-14 w-14 items-center justify-center rounded-full text-3xl" style={{ background: `${elementColors[sign?.element || "Fire"]}15` }}>
+                          {item.data.glyph}
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">{item.data.sign}</p>
+                        <p className="text-xs text-foreground-subtle">{item.data.degrees}°</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {guidedChart.birthDateOnly && (
+                  <p className="mt-3 text-center text-xs text-foreground-subtle">
+                    Add your birth time for Moon and Rising accuracy
+                  </p>
+                )}
+              </Card>
+            )}
+
+            {/* Jehana's intro */}
+            <div className="mb-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="flex-1 rounded-lg bg-surface-muted p-5">
+                  <p className="text-base font-medium text-foreground">{guidedIntro.greeting}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-foreground-muted">{guidedIntro.personalitySummary}</p>
+                  <p className="mt-4 text-sm font-medium text-primary">{guidedIntro.followUp}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Start hooks button */}
+            <button onClick={() => setGuidedHookIdx(1)} className="btn-primary w-full">
+              <Sparkles className="h-4 w-4" /> Begin the Questions
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Hook question — user types answer
+    if (guidedIntro && guidedHookIdx > 0 && guidedHookIdx <= guidedIntro.hookQuestions.length && !guidedResponse) {
+      const hook = guidedIntro.hookQuestions[guidedHookIdx - 1];
+      const handleGuidedHookSubmit = async () => {
+        if (!guidedUserAnswer.trim() || !hook) return;
+        setGuidedLoading(true);
+        setError(null);
+        try {
+          const response = await fetch("/api/echo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "hook-response",
+              birthDate,
+              birthTime: birthTime || undefined,
+              lat: birthLat,
+              lng: birthLng,
+              hookQuestion: hook,
+              userAnswer: guidedUserAnswer,
+            }),
+          });
+          if (!response.ok) throw new Error("Failed");
+          const data = await response.json();
+          setGuidedResponse(data.response);
+        } catch {
+          setError("Jehana couldn't respond. Please try again.");
+        } finally {
+          setGuidedLoading(false);
+        }
+      };
+
+      return (
+        <div className="mx-auto max-w-xl px-4 py-12">
+          <div className="fade-in">
+            <div className="mb-6 rounded-lg bg-surface-muted p-5">
+              <p className="text-sm font-medium text-primary">{hook?.question}</p>
+              {hook?.chartBasis && <p className="mt-1 text-xs text-foreground-subtle italic">Based on: {hook.chartBasis}</p>}
+              {hook?.responseHint && <p className="mt-1 text-xs text-foreground-subtle">{hook.responseHint}</p>}
+            </div>
+            <div>
+              <textarea
+                value={guidedUserAnswer}
+                onChange={(e) => setGuidedUserAnswer(e.target.value)}
+                placeholder="Share your thoughts... there's no wrong answer."
+                rows={4}
+                className="input-field"
+                autoFocus
+              />
+              <button onClick={handleGuidedHookSubmit} disabled={!guidedUserAnswer.trim() || guidedLoading} className="btn-primary mt-3 w-full disabled:opacity-50">
+                {guidedLoading ? <><Clock className="h-4 w-4 animate-spin" /> The universe is echoing back...</> : <><Sparkles className="h-4 w-4" /> Share with Jehana</>}
+              </button>
+            </div>
+            {error && <p className="mt-3 text-sm text-error">{error}</p>}
+            <p className="mt-4 text-center text-xs text-foreground-subtle">
+              Question {guidedHookIdx} of {guidedIntro.hookQuestions.length}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Hook response — show Jehana's answer, then next or finish
+    if (guidedResponse) {
+      const isLastHook = guidedHookIdx >= guidedIntro!.hookQuestions.length;
+      const handleNext = () => {
+        if (isLastHook) {
+          // Transition to chat — convert guided experience to chat messages
+          setIsPersonalized(true);
+          setExchangeCount(guidedIntro!.hookQuestions.length);
+          setMessages([
+            { role: "assistant", content: guidedIntro!.greeting },
+            { role: "assistant", content: guidedIntro!.personalitySummary },
+            ...guidedIntro!.hookQuestions.map((h) => ({ role: "assistant" as const, content: `${h.question} (Based on: ${h.chartBasis})` })),
+            { role: "assistant", content: "I've read the first pages of your chart. Ask me anything — or let the conversation go wherever it wants to go." },
+          ]);
+          setStage("chat");
+        } else {
+          setGuidedResponse(null);
+          setGuidedUserAnswer("");
+          setGuidedHookIdx((i) => i + 1);
+        }
+      };
+
+      return (
+        <div className="mx-auto max-w-xl px-4 py-12">
+          <div className="fade-in">
+            <div className="flex items-start gap-3 mb-6">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="flex-1 rounded-lg bg-surface-muted p-5">
+                <p className="text-sm leading-relaxed text-foreground-muted whitespace-pre-wrap">{guidedResponse}</p>
+              </div>
+            </div>
+            <button onClick={handleNext} className="btn-primary w-full">
+              {isLastHook ? <><BookOpen className="h-4 w-4" /> Continue to free chat →</> : <><Sparkles className="h-4 w-4" /> Next question</>}
+            </button>
+            {!isLastHook && (
+              <p className="mt-4 text-center text-xs text-foreground-subtle">
+                {guidedIntro!.hookQuestions.length - guidedHookIdx} questions remaining
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+  }
+
   // CHAT STAGE
   const remaining = isPremium ? Infinity : freeLimit - freeUsed;
   return (
@@ -596,7 +909,7 @@ export default function JehanaPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto rounded-lg border border-border bg-surface p-4">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto rounded-lg border border-border bg-surface p-4">
         <div className="space-y-4">
           {messages.map((msg, i) => {
             if (msg.isHook) return null;
