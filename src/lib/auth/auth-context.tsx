@@ -45,20 +45,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const sessionUser = data.session?.user || null;
       setUser(sessionUser);
       setIsAnonymous(sessionUser?.is_anonymous || false);
-      setLoading(false);
 
-      // Auto-create anonymous session if no user and Supabase is configured
+      // Auto-create anonymous session if no user and Supabase is configured.
+      // Guard: only attempt once, don't retry if it fails (e.g. anon disabled)
       if (!sessionUser) {
         supabase.auth.signInAnonymously().then(({ data: anonData, error }) => {
           if (anonData?.user) {
             setUser(anonData.user);
             setIsAnonymous(true);
           }
-          if (error) {
+          if (error && !error.message.includes("disabled")) {
             console.warn("Anonymous sign-in failed:", error.message);
           }
         });
       }
+      setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {

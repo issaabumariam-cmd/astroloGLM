@@ -4,6 +4,9 @@ export const maxDuration = 10;
 
 const CACHE = new Map<string, { results: GeoResult[]; expiry: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 10; // 10 requests per minute per IP
 
 export type GeoResult = {
   name: string;
@@ -20,6 +23,23 @@ export async function GET(request: NextRequest) {
   }
 
   const query = q.trim();
+  if (query.length > 200) {
+    return NextResponse.json({ results: [] });
+  }
+
+  // Rate limit per IP
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  const rl = RATE_LIMIT_MAP.get(clientIp);
+  if (rl && rl.resetAt > now) {
+    if (rl.count >= RATE_LIMIT_MAX) {
+      return NextResponse.json({ results: [], error: "Too many requests" }, { status: 429 });
+    }
+    rl.count++;
+  } else {
+    RATE_LIMIT_MAP.set(clientIp, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+  }
+
   const cacheKey = query.toLowerCase();
   const cached = CACHE.get(cacheKey);
   if (cached && cached.expiry > Date.now()) {

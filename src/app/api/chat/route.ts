@@ -68,31 +68,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Messages required" }, { status: 400 });
     }
 
-    // Server-enforced free count check for Deep Echo (tier=premium = chart-aware chat)
-    // Echo chat (no tier or tier=free) is unlimited
+    // Server-enforced free count check for Deep Echo (chart-aware chat)
+    // If chartData is present, this is a premium request — auth is REQUIRED
     let userUuid: string | null = null;
     let isPremiumUser = false;
-    if (tier === "premium" && chartData) {
+    if (chartData) {
       const authHeader = request.headers.get("authorization");
       const accessToken = authHeader?.replace("Bearer ", "");
-      if (accessToken) {
-        const { data: { user } } = await supabaseAdmin.auth.getUser(accessToken);
-        if (user) {
-          userUuid = user.id;
-          const { data: profile } = await supabaseAdmin
-            .from("profiles")
-            .select("ai_questions_used, ai_questions_limit, subscription_status")
-            .eq("id", user.id)
-            .single();
-          if (profile) {
-            isPremiumUser = profile.subscription_status === "premium";
-            if (!isPremiumUser && profile.ai_questions_used >= profile.ai_questions_limit) {
-              return NextResponse.json(
-                { error: "You've used your free Deep Echo questions. Upgrade for unlimited access.", code: "FREE_LIMIT_REACHED" },
-                { status: 402 }
-              );
-            }
-          }
+      if (!accessToken) {
+        return NextResponse.json(
+          { error: "Authentication required for Deep Echo Chat.", code: "AUTH_REQUIRED" },
+          { status: 401 }
+        );
+      }
+      const { data: { user } } = await supabaseAdmin.auth.getUser(accessToken);
+      if (!user) {
+        return NextResponse.json(
+          { error: "Invalid session. Please refresh and try again.", code: "INVALID_SESSION" },
+          { status: 401 }
+        );
+      }
+      userUuid = user.id;
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("ai_questions_used, ai_questions_limit, subscription_status")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        isPremiumUser = profile.subscription_status === "premium";
+        if (!isPremiumUser && profile.ai_questions_used >= profile.ai_questions_limit) {
+          return NextResponse.json(
+            { error: "You've used your free Deep Echo questions. Upgrade for unlimited access.", code: "FREE_LIMIT_REACHED" },
+            { status: 402 }
+          );
         }
       }
     }

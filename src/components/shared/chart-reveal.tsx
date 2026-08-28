@@ -31,15 +31,19 @@ export function ChartReveal({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRevealedCount(0);
     let idx = 0;
+    let recurTimer: ReturnType<typeof setTimeout>;
     const reveal = () => {
       idx++;
       setRevealedCount(idx);
       if (idx < totalToReveal) {
-        setTimeout(reveal, 500);
+        recurTimer = setTimeout(reveal, 500);
       }
     };
     const timer = setTimeout(reveal, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (recurTimer) clearTimeout(recurTimer);
+    };
   }, [totalToReveal]);
 
   const items = [
@@ -99,9 +103,11 @@ export function ChartReveal({
                 <Sparkles className="h-3.5 w-3.5" /> Add birth time →
               </button>
             )}
-            <button onClick={onContinueWithoutTime} className="btn-ghost text-sm">
-              Continue with Sun only
-            </button>
+            {onContinueWithoutTime && (
+              <button onClick={onContinueWithoutTime} className="btn-ghost text-sm">
+                Continue with Sun only
+              </button>
+            )}
           </div>
         </div>
       )}

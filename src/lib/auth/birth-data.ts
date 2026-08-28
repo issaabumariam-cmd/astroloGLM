@@ -15,17 +15,16 @@ export async function saveBirthData(data: BirthData): Promise<{ error: string | 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      birth_date: data.birthDate,
-      birth_time: data.birthTime || null,
-      birth_place: data.birthPlace || null,
-      birth_lat: data.birthLat || null,
-      birth_lng: data.birthLng || null,
-      zodiac_sign: data.zodiacSign || null,
-    })
-    .eq("id", user.id);
+  // Use SECURITY DEFINER function — prevents client from resetting
+  // ai_questions_used or subscription_status via direct table update
+  const { error } = await supabase.rpc("update_own_birth_data", {
+    p_birth_date: data.birthDate,
+    p_birth_time: data.birthTime || null,
+    p_birth_place: data.birthPlace || null,
+    p_birth_lat: data.birthLat || null,
+    p_birth_lng: data.birthLng || null,
+    p_zodiac_sign: data.zodiacSign || null,
+  });
 
   return { error: error?.message || null };
 }
