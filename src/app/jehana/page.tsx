@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, ArrowRight, MapPin } from "lucide-react";
+import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, Crown, ArrowRight, MapPin } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
@@ -59,11 +59,7 @@ type ChartData = {
 
 type Stage = "welcome" | "echo-pick" | "deep-onboard" | "guided-onboard" | "chat";
 
-const HOOK_QUESTIONS: Record<string, string> = {
-  conflict: "How do you handle conflict?",
-  energy: "What drains or energizes you?",
-  strengths: "What's your hidden strength?",
-};
+const FREE_FOLLOW_UPS_PER_HOOK = 1;
 
 const PER_SIGN_SUGGESTIONS = [
   "What does my sun sign say about my personality?",
@@ -103,6 +99,11 @@ export default function JehanaPage() {
   const [guidedUserAnswer, setGuidedUserAnswer] = useState("");
   const [guidedResponse, setGuidedResponse] = useState<string | null>(null);
   const [guidedLoading, setGuidedLoading] = useState(false);
+  const [guidedFollowUps, setGuidedFollowUps] = useState(0);
+  const [guidedFollowUpInput, setGuidedFollowUpInput] = useState("");
+  const [guidedFollowUpLoading, setGuidedFollowUpLoading] = useState(false);
+  const [guidedFollowUpResponse, setGuidedFollowUpResponse] = useState<string | null>(null);
+  const [guidedThread, setGuidedThread] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [guidedChart, setGuidedChart] = useState<{ sun: { sign: string; degrees: number; glyph: string }; moon: { sign: string; degrees: number; glyph: string }; rising: { sign: string; degrees: number; glyph: string }; birthDateOnly: boolean } | null>(null);
   const [guidedIntro, setGuidedIntro] = useState<{ greeting: string; personalitySummary: string; hookQuestions: HookQuestion[]; followUp: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -818,7 +819,7 @@ export default function JehanaPage() {
         if (isLastHook) {
           // Transition to chat — convert guided experience to chat messages
           setIsPersonalized(true);
-          setExchangeCount(guidedIntro!.hookQuestions.length);
+          setExchangeCount(guidedIntro!.hookQuestions.length + guidedFollowUps);
           setMessages([
             { role: "assistant", content: guidedIntro!.greeting },
             { role: "assistant", content: guidedIntro!.personalitySummary },
@@ -830,12 +831,89 @@ export default function JehanaPage() {
           setGuidedResponse(null);
           setGuidedUserAnswer("");
           setGuidedHookIdx((i) => i + 1);
+          setGuidedFollowUps(0);
+          setGuidedFollowUpResponse(null);
+          setGuidedFollowUpInput("");
+          setGuidedThread([]);
         }
       };
+
+      const handleFollowUp = async () => {
+        if (!guidedFollowUpInput.trim()) return;
+        setGuidedFollowUpLoading(true);
+        setError(null);
+
+        // Build conversation context: chart + hook Q&A + follow-ups so far
+        const threadMessages = [
+          ...guidedThread,
+          { role: "user" as const, content: guidedFollowUpInput },
+        ];
+
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const sign = getSignById(selectedSign);
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({
+              messages: [
+                { role: "assistant", content: `The hook question was: "${guidedIntro!.hookQuestions[guidedHookIdx - 1]?.question}"` },
+                { role: "user", content: guidedUserAnswer },
+                { role: "assistant", content: guidedResponse },
+                ...threadMessages,
+              ],
+              chartData: chartData || undefined,
+              signContext: !chartData && sign ? { sign: sign.name, element: sign.element, rulingPlanet: sign.rulingPlanet } : undefined,
+              tier: "premium",
+            }),
+          });
+
+          if (!response.ok) throw new Error("Failed");
+
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          let content = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n").filter(Boolean);
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") break;
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.content) {
+                    content += parsed.content;
+                    setGuidedFollowUpResponse(content);
+                  }
+                } catch {
+                  // skip
+                }
+              }
+            }
+          }
+
+          setGuidedThread([...threadMessages, { role: "assistant", content }]);
+          setGuidedFollowUps((c) => c + 1);
+          setGuidedFollowUpInput("");
+        } catch {
+          setError("Jehana couldn't respond. Please try again.");
+        } finally {
+          setGuidedFollowUpLoading(false);
+        }
+      };
+
+      const canFollowUp = isPremium || guidedFollowUps < FREE_FOLLOW_UPS_PER_HOOK;
 
       return (
         <div className="mx-auto max-w-xl px-4 py-12">
           <div className="fade-in">
+            {/* Jehana's response to the hook */}
             <div className="flex items-start gap-3 mb-6">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Sparkles className="h-5 w-5" />
@@ -844,14 +922,80 @@ export default function JehanaPage() {
                 <p className="text-sm leading-relaxed text-foreground-muted whitespace-pre-wrap">{guidedResponse}</p>
               </div>
             </div>
+
+            {/* Follow-up responses (if any) */}
+            {guidedFollowUpResponse && (
+              <div className="flex items-start gap-3 mb-6 fade-in">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="flex-1 rounded-lg bg-surface-muted p-5">
+                  <p className="text-sm leading-relaxed text-foreground-muted whitespace-pre-wrap">{guidedFollowUpResponse}</p>
+                </div>
+              </div>
+            )}
+
+            {/* "Go deeper" follow-up input */}
+            {canFollowUp && (
+              <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p className="mb-2 text-xs font-medium text-primary">
+                  <Sparkles className="inline h-3 w-3" /> Want to go deeper with this?
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={guidedFollowUpInput}
+                    onChange={(e) => setGuidedFollowUpInput(e.target.value)}
+                    placeholder="Type a follow-up question..."
+                    className="input-field flex-1"
+                    disabled={guidedFollowUpLoading}
+                    enterKeyHint="send"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleFollowUp();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleFollowUp}
+                    disabled={!guidedFollowUpInput.trim() || guidedFollowUpLoading}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {guidedFollowUpLoading ? <Clock className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </button>
+                </div>
+                {!isPremium && guidedFollowUps === 0 && (
+                  <p className="mt-2 text-[10px] text-foreground-subtle">
+                    1 free follow-up per question · Premium for unlimited depth
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Premium gate for more follow-ups */}
+            {!canFollowUp && guidedFollowUps >= FREE_FOLLOW_UPS_PER_HOOK && (
+              <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-4 text-center">
+                <p className="text-xs text-foreground-muted">
+                  You&apos;ve used your free follow-up for this question.
+                </p>
+                <a href="/pricing" className="btn-primary mt-2 text-xs">
+                  <Crown className="h-3 w-3" /> Unlock unlimited depth — £5.99/month
+                </a>
+              </div>
+            )}
+
+            {/* Next question / Continue to chat */}
             <button onClick={handleNext} className="btn-primary w-full">
-              {isLastHook ? <><BookOpen className="h-4 w-4" /> Continue to free chat →</> : <><Sparkles className="h-4 w-4" /> Next question</>}
+              {isLastHook ? <><BookOpen className="h-4 w-4" /> Continue to free chat →</> : <><Sparkles className="h-4 w-4" /> Next question →</>}
             </button>
             {!isLastHook && (
               <p className="mt-4 text-center text-xs text-foreground-subtle">
-                {guidedIntro!.hookQuestions.length - guidedHookIdx} questions remaining
+                Question {guidedHookIdx} of {guidedIntro!.hookQuestions.length}
+                {guidedFollowUps > 0 && ` · ${guidedFollowUps} follow-up${guidedFollowUps > 1 ? "s" : ""} explored`}
               </p>
             )}
+            {error && <p className="mt-3 text-sm text-error">{error}</p>}
           </div>
         </div>
       );
@@ -925,11 +1069,11 @@ export default function JehanaPage() {
                   key={hook.id}
                   onClick={() => {
                     setMessages((prev) => prev.filter((m) => !m.isHook));
-                    sendMessage(HOOK_QUESTIONS[hook.id] || hook.question || "Tell me more");
+                    sendMessage(hook.question || "Tell me more");
                   }}
                   className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-left text-sm text-foreground-muted transition-all hover:border-primary hover:bg-primary/10"
                 >
-                  <span className="font-medium text-primary">?</span> {HOOK_QUESTIONS[hook.id] || hook.question}
+                  <span className="font-medium text-primary">?</span> {hook.question}
                   {hook.chartBasis && (
                     <span className="ml-2 text-xs text-foreground-subtle italic">({hook.chartBasis})</span>
                   )}

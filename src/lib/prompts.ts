@@ -230,31 +230,21 @@ Generate a JSON response with this exact structure:
   "personalitySummary": "A 3-4 sentence summary of who they are, based on their Sun/Moon/Rising and key aspects. Ground it in the book excerpts — reference specific character types and teachings. Not generic astrology.",
   "hookQuestions": [
     {
-      "id": "conflict",
-      "question": "A question about how they handle conflict or challenges — personalized to their Mars/Saturn/aspects. Make it feel like a life coach asking, not an astrologer.",
-      "chartBasis": "Which chart placements informed this question",
+      "id": "a short unique id like 'theme1', 'theme2', 'theme3' — NOT fixed categories",
+      "question": "A question that arises naturally from what the chart + book MOST urgently reveal about this person. NOT a generic category — let the chart dictate the theme. If their most striking placement is a 12th house Sun, ask about solitude. If it's Mars conjunct Pluto, ask about power and transformation. If it's Venus trine Jupiter, ask about generosity and abundance. The question should make them think 'how did you know that?'",
+      "chartBasis": "Which specific chart placements informed this question (planets, signs, houses, aspects)",
       "responseHint": "What Jehana will reveal when they answer"
     },
-    {
-      "id": "energy",
-      "question": "A question about what drains or energizes them — personalized to their Moon/Sun/12th house. Life coach framing.",
-      "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Jehana will reveal when they answer"
-    },
-    {
-      "id": "strengths",
-      "question": "A question about their hidden strengths or natural gifts — personalized to their trines/Jupiter/Venus. Uplifting framing.",
-      "chartBasis": "Which chart placements informed this question",
-      "responseHint": "What Jehana will reveal when they answer"
-    }
+    ...3 questions total, each arising from a DIFFERENT part of the chart...
   ],
   "followUp": "A closing line that invites them to choose a question. 1 sentence. Warm, not pushy."
 }
 
-Important:
-- The greeting should feel like Jehana already knows them — grounded in the book's wisdom
-- The personality summary should reveal something they might not know about themselves — from the book
-- The hook questions should feel personal, not like a quiz — they should make the person think "how did you know that?"
+Critical rules for the hook questions:
+- Do NOT use fixed categories (conflict/energy/strengths). Let the chart decide.
+- Each question must arise from a DIFFERENT layer of the chart (e.g., one from a tension aspect, one from a house placement, one from a trine/gift).
+- The most striking/urgent placement should inform the FIRST question.
+- Questions should feel like a wise friend who has been studying your chart and is genuinely curious about something specific.
 - Reference the book's wisdom naturally, not academically — never say "according to the book"
 - The tone is a wise friend, not a therapist or a fortune teller`;
 
