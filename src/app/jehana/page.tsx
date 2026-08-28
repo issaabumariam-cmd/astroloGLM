@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, Crown, ArrowRight, MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, ArrowRight, MapPin } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
 import { GeoSearch } from "@/components/shared/geo-search";
 import { ChartReveal } from "@/components/shared/chart-reveal";
 import { StreamedIntro } from "@/components/shared/streamed-intro";
+import { CosmicWeatherCard } from "@/components/shared/cosmic-weather";
+import { UpgradeSheet } from "@/components/shared/upgrade-sheet";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { saveBirthData, loadBirthData, getAiUsage } from "@/lib/auth/birth-data";
@@ -72,6 +75,7 @@ const PER_SIGN_SUGGESTIONS = [
 
 export default function JehanaPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>("welcome");
   const [selectedSign, setSelectedSign] = useState<string>("aries");
   const [birthDate, setBirthDate] = useState("");
@@ -857,7 +861,7 @@ export default function JehanaPage() {
   // CHAT STAGE
   const remaining = isPremium ? Infinity : freeLimit - freeUsed;
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col px-4 py-6 sm:px-6">
+    <div className="mx-auto flex h-[calc(100dvh-4rem)] max-w-3xl flex-col px-4 py-6 sm:px-6">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -889,7 +893,7 @@ export default function JehanaPage() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto rounded-lg border border-border bg-surface p-4">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto rounded-lg border border-border bg-surface p-4 overscroll-none">
         <div className="space-y-4">
           {messages.map((msg, i) => {
             if (msg.isHook) return null;
@@ -949,28 +953,20 @@ export default function JehanaPage() {
             </div>
           )}
 
-          {/* Upgrade prompt (modal sheet trigger — Phase C will replace with sheet) */}
+          {/* Upgrade trigger — Jehana's warm words, then modal sheet */}
           {showUpgrade && (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center gap-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <p className="text-sm font-medium text-foreground">
-                  You&apos;ve used your {freeLimit} free questions. Unlock unlimited Deep Echo Chat.
-                </p>
+            <div className="rounded-lg bg-surface-muted p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm leading-relaxed text-foreground-muted">
+                    I&apos;ve loved reading the first pages of your chart with you. There are ten planets
+                    in twelve houses — each one a story. Would you like to go deeper?
+                  </p>
+                </div>
               </div>
-              <a href="/pricing" className="btn-primary mt-3 text-sm">
-                <Crown className="h-3.5 w-3.5" /> Unlock Deep Echo — £5.99/month
-              </a>
-              <button
-                onClick={() => {
-                  setShowUpgrade(false);
-                  setIsPersonalized(false);
-                  setMessages([{ role: "assistant", content: `Let's keep chatting in Echo mode. You're a ${getSignById(selectedSign)?.name} — ask me anything about your sign!` }]);
-                }}
-                className="btn-ghost mt-2 text-xs"
-              >
-                Or keep chatting in Echo mode →
-              </button>
             </div>
           )}
 
@@ -1005,13 +1001,20 @@ export default function JehanaPage() {
         </div>
       </div>
 
+      {/* Cosmic Weather card */}
+      <CosmicWeatherCard
+        mode={isPersonalized ? "deep-echo" : "echo"}
+        chartData={chartData}
+        onAskTransit={(q) => setInput(q)}
+      />
+
       {/* Input */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           sendMessage(input);
         }}
-        className="mt-4 flex gap-2"
+        className="flex gap-2"
       >
         <input
           type="text"
@@ -1029,6 +1032,20 @@ export default function JehanaPage() {
       <p className="mt-2 text-center text-xs text-foreground-subtle">
         For self-reflection and entertainment. Not a substitute for professional advice.
       </p>
+
+      {/* Upgrade modal sheet — Jehana triggers, the app sells */}
+      <UpgradeSheet
+        open={showUpgrade}
+        onClose={() => {
+          setShowUpgrade(false);
+          setIsPersonalized(false);
+          setChartData(null);
+          setMessages([{ role: "assistant", content: `Let's keep chatting in Echo mode. You're a ${getSignById(selectedSign)?.name} — ask me anything about your sign!` }]);
+        }}
+        onAccept={() => {
+          router.push("/pricing");
+        }}
+      />
     </div>
   );
 }
