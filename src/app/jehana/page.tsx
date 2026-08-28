@@ -104,6 +104,8 @@ export default function JehanaPage() {
   const [guidedFollowUpLoading, setGuidedFollowUpLoading] = useState(false);
   const [guidedFollowUpResponse, setGuidedFollowUpResponse] = useState<string | null>(null);
   const [guidedThread, setGuidedThread] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
+  const guidedResponseRef = useRef<HTMLDivElement>(null);
+  const guidedFollowUpRef = useRef<HTMLDivElement>(null);
   const [guidedChart, setGuidedChart] = useState<{ sun: { sign: string; degrees: number; glyph: string }; moon: { sign: string; degrees: number; glyph: string }; rising: { sign: string; degrees: number; glyph: string }; birthDateOnly: boolean } | null>(null);
   const [guidedIntro, setGuidedIntro] = useState<{ greeting: string; personalitySummary: string; hookQuestions: HookQuestion[]; followUp: string } | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -119,11 +121,27 @@ export default function JehanaPage() {
   };
 
   // Only auto-scroll if user was already at the bottom (don't yank on manual scroll-up)
+  // Use 'auto' (instant) during streaming to avoid janky smooth-scroll fighting tokens
+  // Block set during streaming if user has scrolled up (pinnedToBottomRef is false)
   useEffect(() => {
-    if (pinnedToBottomRef.current) {
-      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (pinnedToBottomRef.current && endRef.current) {
+      endRef.current.scrollIntoView({ behavior: streaming ? "auto" : "smooth", block: "end" });
     }
-  }, [messages]);
+  }, [messages, streaming]);
+
+  // Guided flow: scroll to the TOP of Jehana's response when it appears (not bottom)
+  useEffect(() => {
+    if (guidedResponse && guidedResponseRef.current) {
+      guidedResponseRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [guidedResponse]);
+
+  // Guided flow: scroll to follow-up response when it appears
+  useEffect(() => {
+    if (guidedFollowUpResponse && guidedFollowUpRef.current) {
+      guidedFollowUpRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [guidedFollowUpResponse]);
 
   // Check for returning user with saved birth data
   useEffect(() => {
@@ -919,7 +937,7 @@ export default function JehanaPage() {
         <div className="mx-auto max-w-xl px-4 py-12">
           <div className="fade-in">
             {/* Jehana's response to the hook */}
-            <div className="flex items-start gap-3 mb-6">
+            <div ref={guidedResponseRef} className="flex items-start gap-3 mb-6 scroll-mt-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Sparkles className="h-5 w-5" />
               </div>
@@ -930,7 +948,7 @@ export default function JehanaPage() {
 
             {/* Follow-up responses (if any) */}
             {guidedFollowUpResponse && (
-              <div className="flex items-start gap-3 mb-6 fade-in">
+              <div ref={guidedFollowUpRef} className="flex items-start gap-3 mb-6 fade-in scroll-mt-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Sparkles className="h-5 w-5" />
                 </div>
