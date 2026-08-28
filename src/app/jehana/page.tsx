@@ -6,6 +6,8 @@ import { zodiacSigns, getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
 import { GeoSearch } from "@/components/shared/geo-search";
+import { ChartReveal } from "@/components/shared/chart-reveal";
+import { StreamedIntro } from "@/components/shared/streamed-intro";
 import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth/auth-context";
 import { saveBirthData, loadBirthData, getAiUsage } from "@/lib/auth/birth-data";
@@ -714,48 +716,24 @@ export default function JehanaPage() {
           </div>
           <div className="relative z-10 fade-in">
             {guidedChart && (
-              <Card className="mb-6 p-6">
-                <p className="mb-4 text-center text-xs uppercase tracking-[0.125em] text-primary">Your Cosmic Blueprint</p>
-                <div className="flex items-center justify-around">
-                  {[
-                    { label: "Sun", data: guidedChart.sun },
-                    { label: "Moon", data: guidedChart.moon },
-                    { label: "Rising", data: guidedChart.rising },
-                  ].map((item) => {
-                    const sign = getSignById(item.data.sign.toLowerCase()) || zodiacSigns.find((s) => s.name === item.data.sign);
-                    return (
-                      <div key={item.label} className="text-center">
-                        <p className="text-xs uppercase tracking-[0.125em] text-primary">{item.label}</p>
-                        <div className="mx-auto my-2 flex h-14 w-14 items-center justify-center rounded-full text-3xl" style={{ background: `${elementColors[sign?.element || "Fire"]}15` }}>
-                          {item.data.glyph}
-                        </div>
-                        <p className="text-sm font-semibold text-foreground">{item.data.sign}</p>
-                        <p className="text-xs text-foreground-subtle">{item.data.degrees}°</p>
-                      </div>
-                    );
-                  })}
-                </div>
-                {guidedChart.birthDateOnly && (
-                  <p className="mt-3 text-center text-xs text-foreground-subtle">
-                    Add your birth time for Moon and Rising accuracy
-                  </p>
-                )}
-              </Card>
+              <div className="mb-6">
+                <ChartReveal
+                  chart={guidedChart}
+                  onAddTime={() => {
+                    setShowAddTime(false);
+                    setStage("deep-onboard");
+                  }}
+                  onContinueWithoutTime={() => {}}
+                />
+              </div>
             )}
 
-            {/* Jehana's intro */}
-            <div className="mb-6">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div className="flex-1 rounded-lg bg-surface-muted p-5">
-                  <p className="text-base font-medium text-foreground">{guidedIntro.greeting}</p>
-                  <p className="mt-3 text-sm leading-relaxed text-foreground-muted">{guidedIntro.personalitySummary}</p>
-                  <p className="mt-4 text-sm font-medium text-primary">{guidedIntro.followUp}</p>
-                </div>
-              </div>
-            </div>
+            {/* Jehana's intro — streaming token-by-token */}
+            <StreamedIntro
+              greeting={guidedIntro.greeting}
+              personalitySummary={guidedIntro.personalitySummary}
+              followUp={guidedIntro.followUp}
+            />
 
             {/* Start hooks button */}
             <button onClick={() => setGuidedHookIdx(1)} className="btn-primary w-full">
