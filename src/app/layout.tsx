@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { ConsentBanner } from "@/components/layout/consent-banner";
 import { ServiceWorkerRegister } from "@/components/shared/service-worker-register";
+import { NetworkBanner } from "@/components/shared/network-banner";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <AuthProvider>
+          <NetworkBanner />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

@@ -1,9 +1,22 @@
-import { NextResponse } from "next/server";
-import { ollamaHeaders } from "@/lib/ollama/headers";
+import { NextRequest, NextResponse } from "next/server";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 
-export async function GET() {
+/**
+ * GET /api/health            — full diagnostic (gateway + embeddings + chat)
+ * GET /api/health?probe=NNN  — lightweight reachability probe for the client
+ *                              NetworkBanner. No upstream calls, no tokens:
+ *                              if this responds 200, the network path to
+ *                              the app's server is open.
+ */
+export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.has("probe")) {
+    return NextResponse.json(
+      { ok: true, t: Date.now() },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
   const results = {
     gateway: { url: OLLAMA_URL, reachable: false, status: 0 as number },
     embeddings: { reachable: false, dims: 0 },
@@ -24,7 +37,10 @@ export async function GET() {
   try {
     const embedResponse = await fetch(`${OLLAMA_URL}/api/embeddings`, {
       method: "POST",
-      headers: ollamaHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.OLLAMA_API_KEY ? { "X-API-Key": process.env.OLLAMA_API_KEY } : {}),
+      },
       body: JSON.stringify({ model: "nomic-embed-text", prompt: "health check" }),
       signal: AbortSignal.timeout(10000),
     });
@@ -40,7 +56,10 @@ export async function GET() {
   try {
     const chatResponse = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: "POST",
-      headers: ollamaHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.OLLAMA_API_KEY ? { "X-API-Key": process.env.OLLAMA_API_KEY } : {}),
+      },
       body: JSON.stringify({
         messages: [{ role: "user", content: "Say OK" }],
         stream: false,
