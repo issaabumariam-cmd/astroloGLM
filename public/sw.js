@@ -1,4 +1,4 @@
-const CACHE_NAME = "astrolo-v1";
+const CACHE_NAME = "astrolo-v2";
 const STATIC_ASSETS = ["/", "/horoscope", "/signs", "/compatibility", "/pricing", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -14,7 +14,13 @@ self.addEventListener("activate", (event) => {
       Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
-  self.clients.claim();
+  // Force ALL open tabs to drop the old version immediately —
+  // fixes "people stuck on the old app" after an update.
+  event.waitUntil(self.clients.claim().then(() =>
+    self.clients.matchAll({ type: "window" }).then((clients) => {
+      clients.forEach((client) => client.navigate(client.url));
+    })
+  ));
 });
 
 self.addEventListener("fetch", (event) => {
@@ -26,7 +32,13 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
+  // Never cache Next.js RSC payloads or build assets with versioned URLs —
+  // stale RSC payloads made users navigate "old page data" without knowing.
+  if (url.searchParams.has("_rsc") || url.pathname.startsWith("/_next/")) return;
+
   if (request.mode === "navigate") {
+    // Network-first for pages: always prefer the freshest version, cache is
+    // only an offline fallback. Prevents "old version at people's mobiles".
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -39,16 +51,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Static assets (icons, fonts, svg): stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
+      const fetchPromise = fetch(request).then((response) => {
         if (response.status === 200 && response.type === "basic") {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      });
+      }).catch(() => cached);
+      return cached || fetchPromise;
     })
   );
 });

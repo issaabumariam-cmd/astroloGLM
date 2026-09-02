@@ -289,7 +289,7 @@ export default function JehanaPage() {
     }
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, isRetryAfterAuth = false) => {
     if (!text.trim() || streaming || showUpgrade) return;
 
     // Check free limit client-side
@@ -339,7 +339,42 @@ export default function JehanaPage() {
         return;
       }
 
-      if (!response.ok) throw new Error("AI service unavailable");
+      // Session expired — refresh it silently and retry once with the same message
+      if (response.status === 401 && !isRetryAfterAuth) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError && refreshData.session) {
+          setMessages((prev) => prev.filter((m) => m !== userMsg)); // remove before retry to avoid dupes
+          setStreaming(false);
+          return sendMessage(text, true);
+        }
+        // Refresh failed — re-authenticate anonymously from scratch
+        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+        if (!anonError && anonData.session) {
+          setMessages((prev) => prev.filter((m) => m !== userMsg));
+          setStreaming(false);
+          return sendMessage(text, true);
+        }
+        setChatError("Your session expired. Please refresh the page.");
+        setMessages((prev) => prev.filter((m) => m !== userMsg));
+        return;
+      }
+
+      if (response.status === 429) {
+        const retryData = await response.json().catch(() => ({}) as { retryAfterMs?: number });
+        const waitSec = Math.ceil((retryData.retryAfterMs || 8000) / 1000);
+        setChatError(`The cosmos is busy right now — please wait ${waitSec}s and try again.`);
+        setMessages((prev) => prev.filter((m) => m !== userMsg));
+        setInput(text); // give the question back so it isn't lost
+        return;
+      }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}) as { error?: string });
+        setChatError(errData.error || "Jehana couldn't connect right now. Please try again.");
+        setMessages((prev) => prev.filter((m) => m !== userMsg));
+        setInput(text); // give the question back so it isn't lost
+        return;
+      }
 
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
@@ -348,49 +383,74 @@ export default function JehanaPage() {
       const ragRef: { current: RagMeta | undefined } = { current: undefined };
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter(Boolean);
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") break;
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.rag) ragRef.current = parsed.rag;
-              if (parsed.sources) sourcesRef.push(...parsed.sources);
-              if (parsed.content) {
-                contentRef.current = contentRef.current + parsed.content;
-                const newContent = contentRef.current;
-                const currentSources = sourcesRef.length > 0 ? [...sourcesRef] : undefined;
-                const currentRag = ragRef.current;
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = {
-                    role: "assistant",
-                    content: newContent,
-                    sources: currentSources,
-                    rag: currentRag,
-                  };
-                  return [...updated];
-                });
+      // Stream watchdog — if no tokens flow within 90s, cancel the reader
+      // (which unblocks the pending read()) and surface an error instead of
+      // an infinite spinner.
+      let stalled = false;
+      const watchdog = setTimeout(() => {
+        stalled = true;
+        reader.cancel().catch(() => {});
+      }, 90_000);
+
+      try {
+        while (!stalled) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n").filter(Boolean);
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") {
+                break;
               }
-            } catch {
-              // skip
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.rag) ragRef.current = parsed.rag;
+                if (parsed.sources) sourcesRef.push(...parsed.sources);
+                if (parsed.content) {
+                  clearTimeout(watchdog); // tokens are flowing — stream is alive
+                  contentRef.current = contentRef.current + parsed.content;
+                  const newContent = contentRef.current;
+                  const currentSources = sourcesRef.length > 0 ? [...sourcesRef] : undefined;
+                  const currentRag = ragRef.current;
+                  setMessages((prev) => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = {
+                      role: "assistant",
+                      content: newContent,
+                      sources: currentSources,
+                      rag: currentRag,
+                    };
+                    return [...updated];
+                  });
+                }
+              } catch {
+                // skip
+              }
             }
           }
         }
+      } finally {
+        clearTimeout(watchdog);
       }
+
+      if (stalled) throw new Error("Stream stalled");
 
       if (isPersonalized && !isPremium) {
         setExchangeCount((c) => c + 1);
         setFreeUsed((u) => u + 1);
       }
     } catch {
-      setChatError("The cosmos seems busy right now. Please try again in a moment.");
-      setMessages((prev) => prev.filter((m) => m !== userMsg));
+      setChatError("Jehana couldn't connect right now. Please try again in a moment.");
+      // Remove any empty/partial assistant bubble, but KEEP the user's question
+      // so they can retry without retyping it.
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === "assistant" && !last.content) return prev.slice(0, -1);
+        return prev;
+      });
+      setInput(text);
     } finally {
       setStreaming(false);
     }
@@ -1239,10 +1299,17 @@ export default function JehanaPage() {
 
           {chatError && (
             <div className="flex items-center gap-2 rounded-lg bg-error-light px-4 py-3 text-sm text-error">
-              <AlertCircle className="h-4 w-4" />
-              {chatError}
-              <button onClick={() => sendMessage(input)} className="ml-auto text-xs font-medium text-primary hover:text-primary-hover">
-                Retry
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{chatError}</span>
+              <button
+                onClick={() => {
+                  const text = input;
+                  setInput("");
+                  sendMessage(text);
+                }}
+                className="ml-auto shrink-0 text-xs font-medium text-primary hover:text-primary-hover"
+              >
+                Try again
               </button>
             </div>
           )}

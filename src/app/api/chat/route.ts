@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retrieveRelevantChunksDetailed, augmentPromptWithContext, hasBookData } from "@/lib/ollama/rag";
 import { getPrompt } from "@/lib/prompts";
-import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError } from "@/lib/ollama/gateway-fetch";
+import { gatewayFetch, GatewayRateLimitError, GatewayPayloadTooLargeError, GatewayTimeoutError, GatewayBusyError } from "@/lib/ollama/gateway-fetch";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
@@ -165,13 +165,14 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
           top_p: 0.9,
         },
       },
+      streaming: true,
     });
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
       console.error(`Ollama chat request failed: ${response.status} ${response.statusText} — ${errorBody}`);
       return NextResponse.json(
-        { error: "AI service unavailable. Please try again." },
+        { error: "Jehana's connection to the stars dropped. Please try again.", code: "GATEWAY_DOWN" },
         { status: 503 }
       );
     }
@@ -248,17 +249,30 @@ CRITICAL: You do NOT know their Moon sign, Rising sign, or any other planetary p
     });
   } catch (error) {
     if (error instanceof GatewayRateLimitError) {
-      return NextResponse.json({ error: "The cosmos is busy right now. Please wait a moment and try again." }, { status: 429 });
+      return NextResponse.json(
+        {
+          error: "The cosmos is busy right now. Please wait a moment and try again.",
+          code: "RATE_LIMITED",
+          retryAfterMs: error.retryAfterMs,
+        },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((error.retryAfterMs || 5000) / 1000)) } }
+      );
     }
     if (error instanceof GatewayPayloadTooLargeError) {
-      return NextResponse.json({ error: "Your message is too long. Please shorten it and try again." }, { status: 413 });
+      return NextResponse.json({ error: "Your message is too long. Please shorten it and try again.", code: "PAYLOAD_TOO_LARGE" }, { status: 413 });
     }
     if (error instanceof GatewayTimeoutError) {
-      return NextResponse.json({ error: "The cosmos is taking too long to respond. Please try again." }, { status: 504 });
+      return NextResponse.json({ error: "The cosmos is taking too long to respond. Please try again.", code: error.code }, { status: 504 });
+    }
+    if (error instanceof GatewayBusyError) {
+      return NextResponse.json(
+        { error: "The cosmos is busy right now. Please wait a moment and try again.", code: "RATE_LIMITED", retryAfterMs: error.retryAfterMs },
+        { status: 429 }
+      );
     }
     console.error("Chat API error:", error);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again." },
+      { error: "Something went wrong. Please try again.", code: "INTERNAL" },
       { status: 500 }
     );
   }
