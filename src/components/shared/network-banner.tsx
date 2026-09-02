@@ -73,7 +73,7 @@ export function NetworkBanner() {
       <div>
         {state === "offline" ? (
           <>
-            <p className="font-medium">You're offline</p>
+            <p className="font-medium">You&apos;re offline</p>
             <p className="mt-0.5 text-amber-800">
               You can browse previously visited pages. Reconnect to chat with Jehana or generate new readings.
             </p>
@@ -82,7 +82,7 @@ export function NetworkBanner() {
           <>
             <p className="font-medium">Your network is blocking Astrolo</p>
             <p className="mt-0.5 text-amber-800">
-              The page loaded from cache, but our server can't be reached — chat, search, and new readings won't work right now.
+              The page loaded from cache, but our server can&apos;t be reached — chat, search, and new readings won&apos;t work right now.
               Try a different network (e.g. mobile data) or a VPN.
             </p>
           </>
