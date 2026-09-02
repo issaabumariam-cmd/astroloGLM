@@ -20,10 +20,8 @@ test.describe("Mobile UX", () => {
 
   test("chat input has enterKeyHint=send", async ({ page, isMobile }) => {
     if (!isMobile) test.skip();
-    await page.goto("/jehana");
+    await page.goto("/jehana?sign=aries");
     await waitForAuth(page);
-    await page.getByRole("heading", { name: "Echo Chat", exact: true }).click();
-    await page.locator("text=Aries").first().click();
     const input = page.locator('input[enterKeyHint="send"]');
     await expect(input).toBeVisible();
   });
@@ -43,11 +41,13 @@ test.describe("Accessibility", () => {
     }
   });
 
-  test("tap targets >=44px on mode cards", async ({ page }) => {
+  test("tap targets >=44px on welcome cards", async ({ page }) => {
     await page.goto("/jehana");
     await waitForAuth(page);
     const cards = page.locator(".card.card-hover");
-    for (let i = 0; i < 3; i++) {
+    const count = await cards.count();
+    expect(count).toBeGreaterThanOrEqual(1);
+    for (let i = 0; i < count; i++) {
       const box = await cards.nth(i).boundingBox();
       expect(box?.height, `Card ${i} height`).toBeGreaterThanOrEqual(44);
     }
@@ -70,21 +70,22 @@ test.describe("Error + Edge Cases", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("guided reading back button works", async ({ page }) => {
+  test("guided back button returns to welcome", async ({ page }) => {
     await page.goto("/jehana");
     await waitForAuth(page);
-    await page.getByRole("heading", { name: "Guided Reading" }).click();
+    await page.getByRole("heading", { name: "Let Jehana guide you" }).click();
     await page.locator('button:has-text("Back")').click();
-    await expect(page.getByRole("heading", { name: "Guided Reading" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Let Jehana guide you" })).toBeVisible();
   });
 });
 
 test.describe("SEO", () => {
-  test("sitemap.xml includes /jehana not /advisor", async ({ page }) => {
+  test("sitemap.xml includes /jehana and /today, not /advisor", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     expect(response?.status()).toBe(200);
     const content = await page.content();
     expect(content).toContain("/jehana");
+    expect(content).toContain("/today");
     expect(content).not.toContain("/advisor");
   });
 
@@ -97,6 +98,13 @@ test.describe("SEO", () => {
     await page.goto("/");
     const title = await page.title();
     expect(title.length).toBeGreaterThan(0);
+  });
+
+  test("today page renders", async ({ page }) => {
+    await page.goto("/today");
+    await waitForAuth(page);
+    await expect(page.locator("h1")).toContainText(/sky|cosmic/i);
+    await screenshot(page, "today");
   });
 });
 

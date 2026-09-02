@@ -26,7 +26,7 @@ export function UpgradeSheet({
   if (!open) return null;
 
   const features = [
-    "Unlimited Deep Echo conversations",
+    "Unlimited full-chart conversations with Jehana",
     "Full birth chart interpretation (houses, aspects, planets)",
     "AI horoscopes (daily, weekly, monthly)",
     "Deep compatibility readings",
@@ -87,13 +87,13 @@ export function UpgradeSheet({
             className="btn-primary mt-6 w-full"
           >
             <Crown className="h-4 w-4" />
-            Unlock Deep Echo — £5.99/month
+            Unlock Full Chart — £5.99/month
           </button>
           <button
             onClick={onClose}
             className="btn-ghost mt-2 text-xs"
           >
-            Or keep chatting in Echo mode →
+            Or keep chatting about your sun sign →
           </button>
           <p className="mt-3 text-[10px] text-foreground-subtle">
             Cancel anytime. Your birth data stays sacred.

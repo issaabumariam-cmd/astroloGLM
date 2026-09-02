@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticPages = [
     "",
+    "/today",
     "/horoscope",
     "/personal",
     "/signs",
@@ -28,7 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${baseUrl}${path}`,
     lastModified: today,
     changeFrequency: path === "" ? "daily" : "weekly",
-    priority: path === "" ? 1.0 : path === "/horoscope" ? 0.9 : 0.7,
+    priority: path === "" ? 1.0 : path === "/today" ? 0.95 : path === "/horoscope" ? 0.9 : 0.7,
   }));
 
   const signEntries: MetadataRoute.Sitemap = zodiacSigns.flatMap((sign) => [

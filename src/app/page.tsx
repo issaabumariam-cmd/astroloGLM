@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Moon, Star, ArrowRight, BookOpen, Heart, Users } from "lucide-react";
+import { Sparkles, Moon, ArrowRight } from "lucide-react";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
 import { Eyebrow, Card, OrnateDivider } from "@/components/shared/ui-primitives";
 import { zodiacSigns } from "@/lib/astrology/signs";
@@ -12,7 +12,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
+      {/* Hero — one CTA: Meet Jehana (v2: single decision, zero clutter) */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-surface-muted/40 via-background to-background" />
         <div
@@ -33,18 +33,13 @@ export default function HomePage() {
               <span className="text-primary italic">The universe, introducing you to yourself.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-foreground-muted text-balance">
-              The universe has already written your story — every planet, every angle,
-              every house placed the moment you arrived. Jehana reads that moment and
-              echoes it back. Not predictions. Reflections of who you already are.
+              Your personal astrologer. She reads your chart, explains what she sees,
+              and talks with you about your life. Not predictions. Reflections of who you already are.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+            <div className="mt-8">
               <Link href="/jehana" className="btn-primary">
                 <Sparkles className="h-4 w-4" />
                 Meet Jehana — Free
-              </Link>
-              <Link href="/birth-chart" className="btn-secondary">
-                Calculate Your Birth Chart
-                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <p className="mt-6 text-xs text-foreground-subtle">
@@ -54,7 +49,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Today's Cosmic Echo */}
+      {/* Today's Cosmic Echo — daily content keeps SEO + gives a taste of Jehana */}
       <section className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="mb-8 text-center">
           <Eyebrow>Today&apos;s Cosmic Echo</Eyebrow>
@@ -86,14 +81,16 @@ export default function HomePage() {
           </div>
           <div className="mt-6 border-t border-border pt-6 text-center">
             <Link href={`/horoscope/${horoscope.sign.id}`} className="btn-ghost">
-              Read full {horoscope.sign.name} horoscope
+              Ask Jehana about this
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </Card>
       </section>
 
-      {/* Choose Your Sign */}
+      <OrnateDivider className="mx-auto max-w-md" />
+
+      {/* Choose Your Sign — SEO entry, each sign links to its page */}
       <section className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="mb-8 text-center">
           <Eyebrow>Explore</Eyebrow>
@@ -119,84 +116,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <OrnateDivider className="mx-auto max-w-md" />
-
-      {/* Features */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
-        <div className="mb-10 text-center">
-          <Eyebrow>Everything in one place</Eyebrow>
-          <h2 className="heading-serif mt-2 text-3xl font-semibold text-foreground sm:text-4xl">
-            A complete astrology experience
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: Star,
-              title: "Real Birth Charts",
-              desc: "The same astronomical engine that powers Astro.com. Every planet, every angle — a reflection of the cosmic energy you carry.",
-              href: "/birth-chart",
-              cta: "See your chart",
-            },
-            {
-              icon: Sparkles,
-              title: "AI Astrology Advisor",
-              desc: "Ask anything. Jehana is trained on classical astrology texts and your personal chart. Multi-turn conversations, real guidance.",
-              href: "/advisor",
-              cta: "Ask Jehana",
-            },
-            {
-              icon: Heart,
-              title: "Compatibility",
-              desc: "Discover how your sign interacts with every other. Love, communication, trust, and emotional resonance — scored and explained.",
-              href: "/compatibility",
-              cta: "Check compatibility",
-            },
-            {
-              icon: Moon,
-              title: "Daily Horoscopes",
-              desc: "The universe moves — and so do you. Daily and weekly readings with mood, focus, lucky numbers, and guidance.",
-              href: "/horoscope",
-              cta: "Read horoscopes",
-            },
-            {
-              icon: Users,
-              title: "Personality Profiles",
-              desc: "Deep dives into each zodiac sign's traits, strengths, challenges, love style, and career. From classical sources.",
-              href: "/signs",
-              cta: "Explore signs",
-            },
-            {
-              icon: BookOpen,
-              title: "Astrology Library",
-              desc: "A digitised classic astrology text, searchable and structured. The wisdom of C.A.Q. Libra's 1917 masterwork, made accessible.",
-              href: "/book",
-              cta: "Browse the library",
-            },
-          ].map((feature) => (
-            <Card key={feature.title} hover className="p-6">
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <feature.icon className="h-5 w-5" />
-              </div>
-              <h3 className="font-serif text-xl font-semibold text-foreground">
-                {feature.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-foreground-muted">
-                {feature.desc}
-              </p>
-              <Link
-                href={feature.href}
-                className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover"
-              >
-                {feature.cta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Privacy Banner */}
+      {/* Privacy — brand pillar */}
       <section className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
         <Card className="bg-surface-muted/30 p-8 text-center">
           <Eyebrow>The Cosmos Gave It. We Protect It.</Eyebrow>
@@ -212,7 +132,7 @@ export default function HomePage() {
         </Card>
       </section>
 
-      {/* CTA */}
+      {/* Closing CTA — the same single action */}
       <section className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:py-20">
         <div className="text-center">
           <OrnateDivider className="mb-8 max-w-xs" />
@@ -225,7 +145,7 @@ export default function HomePage() {
           <div className="mt-6">
             <Link href="/jehana" className="btn-primary">
               <Sparkles className="h-4 w-4" />
-              Begin Your Journey
+              Meet Jehana — Free
             </Link>
           </div>
         </div>

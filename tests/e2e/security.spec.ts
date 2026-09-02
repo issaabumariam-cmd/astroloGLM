@@ -5,11 +5,9 @@ async function waitForAuth(page: Page) {
 }
 
 test.describe("Security: Free Count Enforcement", () => {
-  test("echo chat has NO free limit badge", async ({ page }) => {
-    await page.goto("/jehana");
+  test("sun-sign chat has NO free limit badge", async ({ page }) => {
+    await page.goto("/jehana?sign=leo");
     await waitForAuth(page);
-    await page.getByRole("heading", { name: "Echo Chat", exact: true }).click();
-    await page.locator("text=Leo").first().click();
     await expect(page.locator("text=/free left/i")).toHaveCount(0);
   });
 

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       const accessToken = authHeader?.replace("Bearer ", "");
       if (!accessToken) {
         return NextResponse.json(
-          { error: "Authentication required for Deep Echo Chat.", code: "AUTH_REQUIRED" },
+          { error: "Please add your birth details so Jehana can read your chart.", code: "AUTH_REQUIRED" },
           { status: 401 }
         );
       }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         isPremiumUser = profile.subscription_status === "premium";
         if (!isPremiumUser && profile.ai_questions_used >= profile.ai_questions_limit) {
           return NextResponse.json(
-            { error: "You've used your free Deep Echo questions. Upgrade for unlimited access.", code: "FREE_LIMIT_REACHED" },
+            { error: "You've used your free questions. Upgrade for unlimited access.", code: "FREE_LIMIT_REACHED" },
             { status: 402 }
           );
         }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Sparkles, Star, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, Crown, ArrowRight, MapPin } from "lucide-react";
+import { Send, Sparkles, AlertCircle, BookOpen, ChevronDown, ChevronUp, Calendar, Clock, Crown, ArrowRight, MapPin } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors } from "@/lib/astrology/signs";
 import { Eyebrow, Card } from "@/components/shared/ui-primitives";
 import { ZodiacWheel } from "@/components/shared/zodiac-wheel";
@@ -197,6 +197,20 @@ export default function JehanaPage() {
     ]);
     setStage("chat");
   };
+
+  // SEO deep-link: /jehana?sign=leo → jump straight into sun-sign chat
+  // (deferred to a microtask — synchronous setState in mount effects
+  // triggers react-hooks/set-state-in-effect)
+  const deepLinkedRef = useRef(false);
+  useEffect(() => {
+    if (deepLinkedRef.current) return;
+    deepLinkedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const signParam = params.get("sign");
+    if (signParam && getSignById(signParam)) {
+      void Promise.resolve().then(() => startEchoChat(signParam));
+    }
+  }, []);
 
   const startDeepEcho = async () => {
     if (!birthDate || birthLat === undefined || birthLng === undefined) {
@@ -456,7 +470,8 @@ export default function JehanaPage() {
     }
   };
 
-  // WELCOME STAGE
+  // WELCOME STAGE — v2: no mode selection. New users → Guided directly.
+  // Only returning users with a completed reading get a choice of where to go.
   if (stage === "welcome") {
     const hasSavedBirthData = birthDate && birthLat !== undefined;
     return (
@@ -478,84 +493,73 @@ export default function JehanaPage() {
               <span className="text-primary italic">written your story.</span>
             </h1>
             <p className="mt-5 max-w-md mx-auto text-sm leading-relaxed text-foreground-muted text-balance">
-              Meet Jehana — your astrological guide. Real natal charts, AI-powered
-              readings, grounded in classical wisdom. Not predictions. Reflections of
-              who you already are.
+              Meet Jehana — your personal astrologer. She reads your chart,
+              explains what she sees, and talks with you about your life.
             </p>
           </div>
 
-          <div className="mt-8 space-y-4">
-            {/* Guided Reading — linear, Jehana drives */}
-            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("guided-onboard")}>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-lg font-semibold text-foreground">Guided Reading</h3>
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">Free · Guided</span>
+          {hasSavedBirthData ? (
+            <div className="mt-8 space-y-4">
+              {/* Returning user — their reading continues */}
+              <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("guided-onboard")}>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-6 w-6 text-primary" />
                   </div>
-                  <p className="mt-1 text-sm text-foreground-muted">
-                    Don&apos;t know what to ask? Jehana reads your chart and guides you
-                    through it — one question at a time. She asks, you answer, she
-                    reflects. No chat pressure, just a slow reading.
-                  </p>
-                  {hasSavedBirthData && (
-                    <p className="mt-2 text-xs font-medium text-primary">
-                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved. Continue →
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif text-lg font-semibold text-foreground">Continue with Jehana</h3>
+                    </div>
+                    <p className="mt-1 text-sm text-foreground-muted">
+                      Your chart is saved. Pick up where you left off — she remembers.
                     </p>
-                  )}
-                </div>
-                <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
-              </div>
-            </div>
-
-            {/* Deep Echo — full chart chat */}
-            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("deep-onboard")}>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <BookOpen className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-lg font-semibold text-foreground">Deep Echo Chat</h3>
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">3 Free Questions</span>
                   </div>
-                  <p className="mt-1 text-sm text-foreground-muted">
-                    Enter your birth details. Jehana reads your full chart and you ask
-                    anything — Sun, Moon, houses, transits, relationships.
-                  </p>
-                  {hasSavedBirthData && (
-                    <p className="mt-2 text-xs font-medium text-primary">
-                      <Sparkles className="inline h-3 w-3" /> Welcome back — your chart is saved. Continue →
+                  <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
+                </div>
+              </div>
+
+              {/* Second visit: chat-first entry also offered */}
+              <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("deep-onboard")}>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif text-lg font-semibold text-foreground">Ask Jehana anything</h3>
+                    </div>
+                    <p className="mt-1 text-sm text-foreground-muted">
+                      Skip the reading — go straight to a conversation about your chart.
                     </p>
-                  )}
-                </div>
-                <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
-              </div>
-            </div>
-
-            {/* Echo — sun sign only */}
-            <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("echo-pick")}>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Star className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-lg font-semibold text-foreground">Echo Chat</h3>
-                    <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">Free · Unlimited</span>
                   </div>
-                  <p className="mt-1 text-sm text-foreground-muted">
-                    Pick your zodiac sign and start chatting. No birth date needed —
-                    general guidance based on your sun sign.
-                  </p>
+                  <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
                 </div>
-                <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="mt-8">
+              {/* First-time user — one path: the Guided reading (v2: no mode choice) */}
+              <div className="card card-hover cursor-pointer p-6" onClick={() => setStage("guided-onboard")}>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif text-lg font-semibold text-foreground">Let Jehana guide you</h3>
+                      <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-medium text-success">Free</span>
+                    </div>
+                    <p className="mt-1 text-sm text-foreground-muted">
+                      Enter your birth details. Jehana reads your chart, introduces
+                      herself, and asks you questions — one at a time. No pressure,
+                      just a slow reading.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 shrink-0 text-foreground-subtle mt-1" />
+                </div>
+              </div>
+            </div>
+          )}
 
           <p className="mt-6 text-center text-xs text-foreground-subtle">
             Your birth data is sacred. The cosmos gave it — we protect it.
@@ -570,7 +574,7 @@ export default function JehanaPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="text-center">
-          <Eyebrow>Echo Chat · Free</Eyebrow>
+          <Eyebrow>Ask Jehana · Free</Eyebrow>
           <h1 className="heading-serif mt-2 text-3xl font-semibold text-foreground">
             Choose Your Sign
           </h1>
@@ -622,7 +626,7 @@ export default function JehanaPage() {
           ) : (
             <div className="fade-in text-center">
               <ZodiacWheel size={72} className="mx-auto text-primary spin-slow" />
-              <Eyebrow className="mt-4">Deep Echo Chat · 3 Free Questions</Eyebrow>
+              <Eyebrow className="mt-4">Ask Jehana Anything · 3 Free Questions</Eyebrow>
               <h1 className="heading-serif mt-2 text-3xl font-semibold text-foreground">
                 Enter your birth details.
               </h1>
@@ -1181,7 +1185,7 @@ export default function JehanaPage() {
             <h1 className="font-serif text-lg font-semibold text-foreground">Jehana</h1>
             <p className="text-xs text-foreground-subtle">
               {getSignById(selectedSign)?.name}
-              {isPersonalized ? " · Deep Echo" : " · Echo Chat"}
+              {isPersonalized ? " · Full chart" : " · Sun sign"}
               {isPersonalized && !isPremium && ` · ${remaining} free left`}
               {" · "}
               {streaming ? "Typing..." : "Ready"}
@@ -1336,7 +1340,7 @@ export default function JehanaPage() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={showUpgrade ? "Unlock Deep Echo to continue..." : "Ask Jehana anything..."}
+          placeholder={showUpgrade ? "Unlock full-chart chat to continue..." : "Ask Jehana anything..."}
           className="input-field flex-1"
           disabled={streaming || showUpgrade}
           enterKeyHint="send"

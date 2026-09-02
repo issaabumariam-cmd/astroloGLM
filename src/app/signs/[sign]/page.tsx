@@ -229,10 +229,16 @@ export default async function SignProfilePage({ params }: PageProps<"/signs/[sig
       {/* CTA */}
       <div className="mt-10 text-center">
         <OrnateDivider className="mb-6 max-w-xs" />
-        <Link href={`/horoscope/${sign.id}`} className="btn-primary">
-          <Star className="h-4 w-4" />
-          Read Today&apos;s {sign.name} Horoscope
-        </Link>
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link href={`/horoscope/${sign.id}`} className="btn-secondary">
+            <Star className="h-4 w-4" />
+            Read Today&apos;s {sign.name} Horoscope
+          </Link>
+          <Link href={`/jehana?sign=${sign.id}`} className="btn-primary">
+            <Sparkles className="h-4 w-4" />
+            Ask Jehana about {sign.name}
+          </Link>
+        </div>
       </div>
     </div>
   );

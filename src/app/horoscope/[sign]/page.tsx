@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, Sparkles } from "lucide-react";
 import { zodiacSigns, getSignById, elementColors, elementDescriptions } from "@/lib/astrology/signs";
 import { generateAIHoroscope } from "@/lib/astrology/horoscope-ai";
 import { Eyebrow, Card, OrnateDivider } from "@/components/shared/ui-primitives";
@@ -158,6 +158,14 @@ export default async function SignHoroscopePage({ params }: PageProps<"/horoscop
           Read full {sign.name} profile
         </Link>
       </Card>
+
+      {/* Ask Jehana CTA */}
+      <div className="mt-8 text-center">
+        <Link href={`/jehana?sign=${sign.id}`} className="btn-primary">
+          <Sparkles className="h-4 w-4" />
+          Ask Jehana about this
+        </Link>
+      </div>
     </div>
   );
 }
